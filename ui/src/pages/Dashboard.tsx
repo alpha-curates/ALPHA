@@ -1,31 +1,37 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Cpu, HardDrive, Thermometer, Activity,
-  Monitor, Database, Wifi, Clock
+  Monitor, Database, Wifi, Clock, Brain,
+  ExternalLink
 } from 'lucide-react'
 import api from '../utils/api'
 import { SystemStatus, StorageInfo, Device } from '../types'
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const [sys, setSys] = useState<SystemStatus | null>(null)
   const [storage, setStorage] = useState<StorageInfo | null>(null)
   const [devices, setDevices] = useState<Device[]>([])
+  const [aiStatus, setAiStatus] = useState<any>(null)
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [sysRes, stoRes, devRes] = await Promise.all([
+        const [sysRes, stoRes, devRes, aiRes] = await Promise.all([
           api.get('/system/status'),
           api.get('/storage/status'),
-          api.get('/devices/')
+          api.get('/devices/'),
+          api.get('/ai/status')
         ])
         setSys(sysRes.data)
         setStorage(stoRes.data)
         setDevices(devRes.data)
+        setAiStatus(aiRes.data)
       } catch {}
     }
     load()
-    const interval = setInterval(load, 10000)
+    const interval = setInterval(load, 30000)
     return () => clearInterval(interval)
   }, [])
 
@@ -39,6 +45,28 @@ export default function Dashboard() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* AI Setup Banner */}
+      {aiStatus && !aiStatus.ollama && (
+        <div className="glass-card" style={{
+          padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16,
+          borderLeft: '3px solid var(--accent)',
+          background: 'linear-gradient(135deg, rgba(108,92,231,0.08), rgba(108,92,231,0.02))'
+        }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Brain size={20} style={{ color: 'var(--accent)' }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>Resume AI Setup</div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+              Ollama is not connected. Install Ollama to enable local AI chat, file analysis, and system assistant.
+            </div>
+          </div>
+          <button className="btn btn-primary" onClick={() => navigate('/ai')}>
+            <ExternalLink size={14} /> Open AI Studio
+          </button>
+        </div>
+      )}
+
       <div className="grid-4">
         <div className="glass-card stat-card">
           <div className="stat-label"><Cpu size={14} style={{ display: 'inline', marginRight: 4 }} />CPU</div>
