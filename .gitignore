@@ -1,0 +1,14 @@
+# ALPHA - Personal Cloud OS
+
+node_modules/
+__pycache__/
+*.pyc
+.env
+*.db
+storage/*
+!storage/.gitkeep
+dist/
+.vite/
+*.egg-info/
+.venv/
+venv/
