@@ -48,6 +48,12 @@ def create_app():
     from api.users import users_bp
     from api.remote import remote_bp
     from api.apps import apps_bp
+    from api.popups import popups_bp
+    from api.shares import shares_bp
+    from api.trash import trash_bp
+    from api.recent import recent_bp
+    from api.tools import tools_bp
+    from api.system_tools import sys_tools_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(storage_bp, url_prefix='/api/storage')
@@ -59,6 +65,12 @@ def create_app():
     app.register_blueprint(users_bp, url_prefix='/api/users')
     app.register_blueprint(remote_bp, url_prefix='/api/remote')
     app.register_blueprint(apps_bp, url_prefix='/api/apps')
+    app.register_blueprint(popups_bp, url_prefix='/api/popups')
+    app.register_blueprint(shares_bp, url_prefix='/api/shares')
+    app.register_blueprint(trash_bp, url_prefix='/api/trash')
+    app.register_blueprint(recent_bp, url_prefix='/api')
+    app.register_blueprint(tools_bp, url_prefix='/api/tools')
+    app.register_blueprint(sys_tools_bp, url_prefix='/api/system')
 
     @app.route('/api/status')
     def status():

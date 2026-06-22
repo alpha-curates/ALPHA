@@ -11,6 +11,10 @@ import AppsPage from './pages/Apps'
 import NotificationsPage from './pages/Notifications'
 import SettingsPage from './pages/Settings'
 import UsersPage from './pages/Users'
+import TrashPage from './pages/TrashPage'
+import SharesPage from './pages/SharesPage'
+import ToolsPage from './pages/ToolsPage'
+import SystemToolsPage from './pages/SystemToolsPage'
 import Layout from './components/layout/Layout'
 
 function AppRoutes() {
@@ -29,6 +33,10 @@ function AppRoutes() {
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/users" element={<UsersPage />} />
+        <Route path="/trash" element={<TrashPage />} />
+        <Route path="/shares" element={<SharesPage />} />
+        <Route path="/tools" element={<ToolsPage />} />
+        <Route path="/system-tools" element={<SystemToolsPage />} />
         <Route path="*" element={<Dashboard />} />
       </Routes>
     </Layout>

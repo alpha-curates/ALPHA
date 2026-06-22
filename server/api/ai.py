@@ -1,35 +1,45 @@
 from flask import Blueprint, jsonify, request
 from main import db
-from models.models import AIModel, ChatMessage
+from models.models import AIModel, ChatMessage, ChatAttachment, AiProvider, GithubRepo
 from flask_login import login_required, current_user
 from config import Config
-import requests
-import json
-import os
+from api.ai_providers import get_provider, get_provider_from_db, OllamaProvider
+import requests, json, os, uuid, datetime, io, base64
 
 ai_bp = Blueprint('ai', __name__)
-
 STORAGE_BASE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'storage')
+
+def get_provider_for_user(provider_id=None):
+    """Get the active provider for the current user"""
+    if provider_id:
+        dp = AiProvider.query.filter_by(id=provider_id, user_id=current_user.id, enabled=True).first()
+        if dp: return get_provider_from_db(dp)
+    # Check if user has any enabled provider
+    dp = AiProvider.query.filter_by(user_id=current_user.id, enabled=True).first()
+    if dp: return get_provider_from_db(dp)
+    # Default to Ollama
+    return OllamaProvider(), []
 
 @ai_bp.route('/status')
 @login_required
 def status():
-    remote_enabled = current_user.settings.get('remote_ai', False) if current_user.settings else False
-    result = {'local': False, 'remote': remote_enabled, 'ollama': False}
+    result = {'ollama': False, 'providers': [], 'active_provider': None}
     try:
-        r = requests.get(f'{Config.OLLAMA_URL}/api/tags', timeout=5)
-        if r.status_code == 200:
-            result['ollama'] = True
-            result['local'] = True
-    except:
-        pass
-    result['models'] = []
-    try:
-        r = requests.get(f'{Config.OLLAMA_URL}/api/tags', timeout=5)
-        if r.status_code == 200:
-            result['models'] = r.json().get('models', [])
-    except:
-        pass
+        r = requests.get(f'{Config.OLLAMA_URL}/api/tags', timeout=3)
+        if r.status_code == 200: result['ollama'] = True
+    except: pass
+    providers = AiProvider.query.filter_by(user_id=current_user.id, enabled=True).all()
+    for p in providers:
+        provider, models = get_provider_from_db(p)
+        available = []
+        try: available = provider.list_models()
+        except: pass
+        result['providers'].append({
+            'id': p.id, 'name': p.name, 'type': p.provider_type,
+            'default_model': p.default_model, 'models': available[:20]
+        })
+    active = AiProvider.query.filter_by(user_id=current_user.id, enabled=True).first()
+    if active: result['active_provider'] = {'id': active.id, 'name': active.name, 'type': active.provider_type, 'model': active.default_model}
     return jsonify(result)
 
 @ai_bp.route('/models')
@@ -39,67 +49,133 @@ def models():
     remote = []
     try:
         r = requests.get(f'{Config.OLLAMA_URL}/api/tags', timeout=5)
-        if r.status_code == 200:
-            remote = r.json().get('models', [])
-    except:
-        pass
+        if r.status_code == 200: remote = r.json().get('models', [])
+    except: pass
+    user_providers = []
+    for p in AiProvider.query.filter_by(user_id=current_user.id, enabled=True).all():
+        provider, _ = get_provider_from_db(p)
+        try:
+            mods = provider.list_models()
+            user_providers.append({'id': p.id, 'name': p.name, 'type': p.provider_type, 'models': mods[:30]})
+        except:
+            user_providers.append({'id': p.id, 'name': p.name, 'type': p.provider_type, 'models': []})
     return jsonify({
-        'local': [{'id': m.id, 'name': m.name, 'model_id': m.model_id, 'size': m.size, 'downloaded': m.downloaded, 'active': m.active} for m in local],
-        'remote': remote
+        'local': [{'id': m.id, 'name': m.name, 'model_id': m.model_id, 'size': m.size, 'downloaded': m.downloaded} for m in local],
+        'remote': remote,
+        'providers': user_providers
     })
 
-@ai_bp.route('/models/pull', methods=['POST'])
+@ai_bp.route('/providers', methods=['GET', 'POST'])
 @login_required
-def pull_model():
-    model = request.json.get('model', 'llama3.2:1b')
-    try:
-        r = requests.post(f'{Config.OLLAMA_URL}/api/pull', json={'name': model}, timeout=300)
-        if r.status_code == 200:
-            existing = AIModel.query.filter_by(model_id=model).first()
-            if not existing:
-                m = AIModel(name=model, model_id=model, downloaded=True)
-                db.session.add(m)
-                db.session.commit()
-            return jsonify({'message': f'Model {model} pulled'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    return jsonify({'error': 'Failed to pull model'}), 500
+def handle_providers():
+    if request.method == 'GET':
+        providers = AiProvider.query.filter_by(user_id=current_user.id).all()
+        return jsonify([{
+            'id': p.id, 'name': p.name, 'type': p.provider_type, 'api_url': p.api_url,
+            'has_key': bool(p.api_key), 'default_model': p.default_model,
+            'enabled': p.enabled, 'models': json.loads(p.models) if p.models else []
+        } for p in providers])
+    data = request.json
+    existing = AiProvider.query.filter_by(user_id=current_user.id, provider_type=data['type']).first()
+    if existing and not data.get('force'):
+        return jsonify({'error': 'Provider already exists', 'id': existing.id}), 409
+    if existing and data.get('force'):
+        existing.name = data.get('name', existing.name)
+        if data.get('api_key'): existing.api_key = data['api_key']
+        if data.get('api_url'): existing.api_url = data['api_url']
+        existing.default_model = data.get('default_model', existing.default_model)
+        existing.models = json.dumps(data.get('models', []))
+        existing.enabled = data.get('enabled', True)
+    else:
+        p = AiProvider(
+            user_id=current_user.id, name=data.get('name', data['type']),
+            provider_type=data['type'], api_key=data.get('api_key', ''),
+            api_url=data.get('api_url', ''), default_model=data.get('default_model', ''),
+            models=json.dumps(data.get('models', [])), enabled=data.get('enabled', True)
+        )
+        db.session.add(p)
+    db.session.commit()
+    return jsonify({'message': 'Provider saved'})
 
-@ai_bp.route('/models/remove', methods=['POST'])
+@ai_bp.route('/providers/<provider_id>', methods=['PUT', 'DELETE'])
 @login_required
-def remove_model():
-    model_id = request.json.get('model_id', '')
+def modify_provider(provider_id):
+    p = AiProvider.query.filter_by(id=provider_id, user_id=current_user.id).first()
+    if not p: return jsonify({'error': 'Not found'}), 404
+    if request.method == 'DELETE':
+        db.session.delete(p)
+        db.session.commit()
+        return jsonify({'message': 'Deleted'})
+    data = request.json
+    if 'name' in data: p.name = data['name']
+    if 'api_key' in data: p.api_key = data['api_key']
+    if 'api_url' in data: p.api_url = data['api_url']
+    if 'default_model' in data: p.default_model = data['default_model']
+    if 'enabled' in data: p.enabled = data['enabled']
+    db.session.commit()
+    return jsonify({'message': 'Updated'})
+
+@ai_bp.route('/providers/test', methods=['POST'])
+@login_required
+def test_provider():
+    data = request.json
+    provider = get_provider(data.get('type', 'openai'), {
+        'api_key': data.get('api_key', ''), 'api_url': data.get('api_url', ''),
+        'default_model': data.get('default_model', '')
+    })
     try:
-        r = requests.delete(f'{Config.OLLAMA_URL}/api/delete', json={'name': model_id}, timeout=30)
-        m = AIModel.query.filter_by(model_id=model_id).first()
-        if m:
-            db.session.delete(m)
-            db.session.commit()
-        return jsonify({'message': f'Model {model_id} removed'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        r = provider.chat([{'role': 'user', 'content': 'Reply with just: OK'}], data.get('default_model', ''))
+        return jsonify({'success': bool(r and 'OK' in r), 'response': r})
+    except Exception as e: return jsonify({'success': False, 'error': str(e)})
 
 @ai_bp.route('/chat', methods=['POST'])
 @login_required
 def chat():
     data = request.json
     message = data.get('message', '')
-    model = data.get('model', 'llama3.2:1b')
-    user_msg = ChatMessage(user_id=current_user.id, role='user', content=message, model=model)
+    model = data.get('model', '')
+    provider_id = data.get('provider_id', '')
+    attachment_ids = data.get('attachments', [])
+
+    provider, _ = get_provider_for_user(provider_id)
+    if not model: model = provider.model or 'llama3.2:1b'
+
+    # Include attachment contents in context
+    context = message
+    if attachment_ids:
+        files = ChatAttachment.query.filter(ChatAttachment.id.in_(attachment_ids), ChatAttachment.user_id == current_user.id).all()
+        for f in files:
+            fp = f.file_path
+            if os.path.isfile(fp):
+                try:
+                    with open(fp, 'r', errors='replace') as fh:
+                        content = fh.read(3000)
+                    context = f"[Attached file: {f.file_name}]\n```\n{content}\n```\n\n{message}"
+                except: pass
+
+    user_msg = ChatMessage(user_id=current_user.id, role='user', content=context, model=model)
     db.session.add(user_msg)
+    db.session.flush()
+
+    for aid in attachment_ids:
+        att = ChatAttachment.query.get(aid)
+        if att:
+            att.message_id = user_msg.id
+
     try:
-        r = requests.post(f'{Config.OLLAMA_URL}/api/generate', json={'model': model, 'prompt': message, 'stream': False}, timeout=120)
-        if r.status_code == 200:
-            response = r.json().get('response', '')
-            ai_msg = ChatMessage(user_id=current_user.id, role='assistant', content=response, model=model)
-            db.session.add(ai_msg)
-            db.session.commit()
-            return jsonify({'response': response, 'id': ai_msg.id})
+        history = ChatMessage.query.filter_by(user_id=current_user.id).order_by(ChatMessage.created_at.desc()).limit(20).all()
+        history.reverse()
+        msgs = [{'role': m.role, 'content': m.content} for m in history[:-1]]  # all but current
+        msgs.append({'role': 'user', 'content': context})
+        response = provider.chat(msgs, model)
+        if not response: response = 'No response from AI'
+        ai_msg = ChatMessage(user_id=current_user.id, role='assistant', content=response, model=model)
+        db.session.add(ai_msg)
+        db.session.commit()
+        return jsonify({'response': response, 'id': ai_msg.id, 'provider': provider.name})
     except Exception as e:
         db.session.commit()
-        return jsonify({'response': f'AI unavailable: {str(e)}'})
-    db.session.commit()
-    return jsonify({'response': 'AI service unavailable'})
+        return jsonify({'response': f'AI error: {str(e)}', 'provider': provider.name})
 
 @ai_bp.route('/history')
 @login_required
@@ -114,55 +190,237 @@ def history():
 @login_required
 def clear_history():
     ChatMessage.query.filter_by(user_id=current_user.id).delete()
+    ChatAttachment.query.filter_by(user_id=current_user.id).delete()
     db.session.commit()
     return jsonify({'message': 'History cleared'})
+
+@ai_bp.route('/models/pull', methods=['POST'])
+@login_required
+def pull_model():
+    model = request.json.get('model', 'llama3.2:1b')
+    try:
+        r = requests.post(f'{Config.OLLAMA_URL}/api/pull', json={'name': model}, timeout=300)
+        if r.status_code == 200:
+            existing = AIModel.query.filter_by(model_id=model).first()
+            if not existing:
+                m = AIModel(name=model, model_id=model, downloaded=True)
+                db.session.add(m)
+                db.session.commit()
+            return jsonify({'message': f'Model {model} pulled'})
+    except Exception as e: return jsonify({'error': str(e)}), 500
+    return jsonify({'error': 'Failed to pull model'}), 500
+
+@ai_bp.route('/models/remove', methods=['POST'])
+@login_required
+def remove_model():
+    model_id = request.json.get('model_id', '')
+    try:
+        r = requests.delete(f'{Config.OLLAMA_URL}/api/delete', json={'name': model_id}, timeout=30)
+        m = AIModel.query.filter_by(model_id=model_id).first()
+        if m: db.session.delete(m); db.session.commit()
+        return jsonify({'message': f'Model {model_id} removed'})
+    except Exception as e: return jsonify({'error': str(e)}), 500
 
 @ai_bp.route('/file-intel', methods=['POST'])
 @login_required
 def file_intel():
     path = request.json.get('path', '')
-    model = request.json.get('model', 'llama3.2:1b')
+    model = request.json.get('model', '')
+    provider_id = request.json.get('provider_id', '')
+    provider, _ = get_provider_for_user(provider_id)
+    if not model: model = provider.model or 'llama3.2:1b'
     full = os.path.abspath(os.path.join(STORAGE_BASE, path.lstrip('/')))
     if not full.startswith(STORAGE_BASE) or not os.path.isfile(full):
         return jsonify({'error': 'File not found'}), 404
     try:
-        with open(full, 'r', errors='replace') as f:
-            content = f.read(5000)
-        prompt = f"Analyze this file and summarize what it contains:\n\nFilename: {os.path.basename(full)}\n\nContent:\n{content}"
-        r = requests.post(f'{Config.OLLAMA_URL}/api/generate', json={'model': model, 'prompt': prompt, 'stream': False}, timeout=120)
-        if r.status_code == 200:
-            analysis = r.json().get('response', '')
-            return jsonify({'analysis': analysis, 'filename': os.path.basename(full)})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        with open(full, 'r', errors='replace') as f: content = f.read(5000)
+        ext = os.path.splitext(full)[1].lower()
+        prompt = f"Analyze this {ext} file and summarize:\n\nFilename: {os.path.basename(full)}\n\nContent:\n{content}"
+        response = provider.chat([{'role': 'user', 'content': prompt}], model)
+        if response: return jsonify({'analysis': response, 'filename': os.path.basename(full)})
+    except Exception as e: return jsonify({'error': str(e)}), 500
     return jsonify({'error': 'Analysis failed'}), 500
 
 @ai_bp.route('/system-assistant', methods=['POST'])
 @login_required
 def system_assistant():
     query = request.json.get('query', '')
-    model = request.json.get('model', 'llama3.2:1b')
-    import psutil, platform, datetime
+    model = request.json.get('model', '')
+    provider_id = request.json.get('provider_id', '')
+    provider, _ = get_provider_for_user(provider_id)
+    if not model: model = provider.model or 'llama3.2:1b'
+    import psutil, platform as pf
     uptime_seconds = int(datetime.datetime.now().timestamp() - psutil.boot_time())
-    days = uptime_seconds // 86400
-    hours = (uptime_seconds % 86400) // 3600
-    sys_info = f"""System: {platform.platform()}
-Hostname: {platform.node()}
+    days = uptime_seconds // 86400; hours = (uptime_seconds % 86400) // 3600
+    sys_info = f"""System: {pf.platform()}
+Hostname: {pf.node()}
 CPU: {psutil.cpu_percent()}% used, {psutil.cpu_count()} cores
 Memory: {psutil.virtual_memory().percent}% used
 Disk: {psutil.disk_usage('/').percent}% used
 Uptime: {days}d {hours}h
-Temperature: {'N/A'}"""
-    prompt = f"""You are ALPHA's system assistant. Here is the current system state:
+Processes: {len(psutil.pids())}"""
+    prompt = f"""You are ALPHA's system assistant. Here is system state:
 {sys_info}
 
-User query: {query}
+User: {query}
 
-Answer the user's question about the system."""
+Answer concisely about the system."""
     try:
-        r = requests.post(f'{Config.OLLAMA_URL}/api/generate', json={'model': model, 'prompt': prompt, 'stream': False}, timeout=120)
-        if r.status_code == 200:
-            return jsonify({'response': r.json().get('response', ''), 'system_info': sys_info})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        response = provider.chat([{'role': 'user', 'content': prompt}], model)
+        if response: return jsonify({'response': response, 'system_info': sys_info})
+    except Exception as e: return jsonify({'error': str(e)}), 500
     return jsonify({'response': 'System assistant unavailable'})
+
+@ai_bp.route('/attach', methods=['POST'])
+@login_required
+def attach_file():
+    if 'file' not in request.files: return jsonify({'error': 'No file'}), 400
+    f = request.files['file']
+    if not f.filename: return jsonify({'error': 'No file'}), 400
+    ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    safe_name = f"{ts}_{uuid.uuid4().hex[:8]}_{f.filename}"
+    chat_dir = os.path.join(STORAGE_BASE, '.chat_attachments')
+    os.makedirs(chat_dir, exist_ok=True)
+    fp = os.path.join(chat_dir, safe_name)
+    f.save(fp)
+    size = os.path.getsize(fp)
+    ext = os.path.splitext(f.filename)[1].lower()
+    att = ChatAttachment(
+        user_id=current_user.id, file_name=f.filename,
+        file_path=fp, file_type=ext, file_size=size
+    )
+    db.session.add(att)
+    db.session.commit()
+    return jsonify({
+        'id': att.id, 'file_name': att.file_name, 'file_type': att.file_type,
+        'file_size': att.file_size
+    }), 201
+
+@ai_bp.route('/attachments')
+@login_required
+def list_attachments():
+    atts = ChatAttachment.query.filter_by(user_id=current_user.id, message_id=None).order_by(ChatAttachment.created_at.desc()).all()
+    return jsonify([{
+        'id': a.id, 'file_name': a.file_name, 'file_type': a.file_type,
+        'file_size': a.file_size, 'created_at': a.created_at.isoformat()
+    } for a in atts])
+
+@ai_bp.route('/generate-file', methods=['POST'])
+@login_required
+def generate_file():
+    data = request.json
+    prompt = data.get('prompt', '')
+    file_type = data.get('file_type', 'txt')
+    model = data.get('model', '')
+    provider_id = data.get('provider_id', '')
+    save_path = data.get('save_path', '')
+    if not prompt: return jsonify({'error': 'No prompt'}), 400
+    provider, _ = get_provider_for_user(provider_id)
+    if not model: model = provider.model or 'llama3.2:1b'
+
+    type_prompts = {
+        'txt': 'Write plain text content.',
+        'html': 'Generate a complete HTML page with inline CSS.',
+        'css': 'Generate CSS code only, no explanation.',
+        'js': 'Generate JavaScript code only, no explanation.',
+        'py': 'Generate Python code only, no explanation.',
+        'json': 'Generate valid JSON only, no explanation.',
+        'md': 'Generate markdown content.',
+        'sh': 'Generate a bash script.',
+        'yaml': 'Generate YAML content.',
+        'sql': 'Generate SQL queries.',
+    }
+    sys_prompt = type_prompts.get(file_type, 'Generate the requested content.')
+    full_prompt = f"{sys_prompt}\nUser request: {prompt}\n\nOutput only the content, no extra text."
+
+    try:
+        content = provider.chat([{'role': 'user', 'content': full_prompt}], model)
+        if not content: return jsonify({'error': 'Generation failed'}), 500
+        ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        fname = f"ai_generated_{ts}.{file_type}"
+        if save_path:
+            save_full = os.path.normpath(os.path.join(STORAGE_BASE, save_path.lstrip('/')))
+            if save_full.startswith(STORAGE_BASE):
+                os.makedirs(os.path.dirname(save_full), exist_ok=True)
+                with open(save_full, 'w') as f: f.write(content)
+                return jsonify({'message': 'File saved', 'path': os.path.relpath(save_full, STORAGE_BASE), 'content': content[:200]})
+        # Return content for preview
+        return jsonify({'content': content, 'filename': fname, 'file_type': file_type})
+    except Exception as e: return jsonify({'error': str(e)}), 500
+
+@ai_bp.route('/github/connect', methods=['POST'])
+@login_required
+def github_connect():
+    data = request.json
+    token = data.get('token', '')
+    repo = data.get('repo', '')
+    branch = data.get('branch', 'main')
+    if not token or not repo: return jsonify({'error': 'Token and repo required'}), 400
+    parts = repo.replace('https://github.com/', '').split('/')
+    if len(parts) < 2: return jsonify({'error': 'Invalid repo format. Use owner/repo'}), 400
+    owner, name = parts[0], parts[1].replace('.git', '')
+    full = f'{owner}/{name}'
+    existing = GithubRepo.query.filter_by(user_id=current_user.id, repo_full=full).first()
+    if existing:
+        existing.access_token = token; existing.branch = branch
+    else:
+        existing = GithubRepo(user_id=current_user.id, repo_full=full, repo_name=name, repo_owner=owner, branch=branch, access_token=token)
+        db.session.add(existing)
+    db.session.commit()
+    return jsonify({'message': 'Connected', 'repo': full})
+
+@ai_bp.route('/github/repos')
+@login_required
+def github_repos():
+    repos = GithubRepo.query.filter_by(user_id=current_user.id).all()
+    return jsonify([{
+        'id': r.id, 'repo': r.repo_full, 'name': r.repo_name,
+        'owner': r.repo_owner, 'branch': r.branch, 'connected_at': r.connected_at.isoformat()
+    } for r in repos])
+
+@ai_bp.route('/github/<repo_id>/files')
+@login_required
+def github_files(repo_id):
+    repo = GithubRepo.query.filter_by(id=repo_id, user_id=current_user.id).first()
+    if not repo: return jsonify({'error': 'Not found'}), 404
+    path = request.args.get('path', '')
+    headers = {'Authorization': f'token {repo.access_token}', 'Accept': 'application/vnd.github.v3+json'}
+    url = f'https://api.github.com/repos/{repo.repo_full}/contents/{path}?ref={repo.branch}'
+    try:
+        r = requests.get(url, headers=headers, timeout=15)
+        if r.status_code == 200:
+            return jsonify(r.json())
+        return jsonify({'error': f'GitHub error: {r.status_code}', 'detail': r.text[:200]}), r.status_code
+    except Exception as e: return jsonify({'error': str(e)}), 500
+
+@ai_bp.route('/github/<repo_id>/analyze', methods=['POST'])
+@login_required
+def github_analyze(repo_id):
+    repo = GithubRepo.query.filter_by(id=repo_id, user_id=current_user.id).first()
+    if not repo: return jsonify({'error': 'Not found'}), 404
+    file_path = request.json.get('path', '')
+    provider, _ = get_provider_for_user(request.json.get('provider_id', ''))
+    model = request.json.get('model', '') or provider.model or 'llama3.2:1b'
+    headers = {'Authorization': f'token {repo.access_token}', 'Accept': 'application/vnd.github.v3+json'}
+    url = f'https://api.github.com/repos/{repo.repo_full}/contents/{file_path}?ref={repo.branch}'
+    try:
+        r = requests.get(url, headers=headers, timeout=15)
+        if r.status_code != 200: return jsonify({'error': 'File not found'}), 404
+        data = r.json()
+        content_b64 = data.get('content', '')
+        try: content = base64.b64decode(content_b64).decode('utf-8', errors='replace')[:5000]
+        except: content = 'Binary file'
+        query = request.json.get('query', 'Analyze this code. What does it do?')
+        prompt = f"File: {file_path}\n\n```\n{content}\n```\n\n{query}"
+        response = provider.chat([{'role': 'user', 'content': prompt}], model)
+        return jsonify({'analysis': response, 'file': file_path})
+    except Exception as e: return jsonify({'error': str(e)}), 500
+
+@ai_bp.route('/github/<repo_id>/disconnect', methods=['DELETE'])
+@login_required
+def github_disconnect(repo_id):
+    repo = GithubRepo.query.filter_by(id=repo_id, user_id=current_user.id).first()
+    if not repo: return jsonify({'error': 'Not found'}), 404
+    db.session.delete(repo)
+    db.session.commit()
+    return jsonify({'message': 'Disconnected'})

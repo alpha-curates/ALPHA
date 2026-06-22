@@ -5,7 +5,8 @@ import { useTheme } from '../../hooks/useTheme'
 import api from '../../utils/api'
 import {
   LayoutDashboard, HardDrive, Brain, Monitor, Puzzle,
-  Grid3X3, Settings, LogOut, Bell, Users, BellDot
+  Grid3X3, Settings, LogOut, Bell, Users, BellDot, Trash2,
+  Link, Wrench, Server, FileText
 } from 'lucide-react'
 
 const navItems = [
@@ -17,6 +18,11 @@ const navItems = [
   { label: 'Devices', icon: Monitor, path: '/devices' },
   { label: 'Extensions', icon: Puzzle, path: '/extensions' },
   { label: 'Apps', icon: Grid3X3, path: '/apps' },
+  { label: 'System Tools', icon: Server, path: '/system-tools' },
+  { section: 'Utilities' },
+  { label: 'Tools', icon: Wrench, path: '/tools' },
+  { label: 'Share Links', icon: Link, path: '/shares' },
+  { label: 'Trash', icon: Trash2, path: '/trash' },
   { section: 'Account' },
   { label: 'Notifications', icon: Bell, path: '/notifications' },
   { label: 'Settings', icon: Settings, path: '/settings' },

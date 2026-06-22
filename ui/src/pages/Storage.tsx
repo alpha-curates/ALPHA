@@ -4,7 +4,7 @@ import {
   Plus, Search, ChevronRight, ArrowLeft, RefreshCw,
   Image, FileText, Music, Film, Archive, Grid, List,
   X, Copy, Move, Edit3, Database, Server, FolderPlus,
-  Share2
+  Share2, Star
 } from 'lucide-react'
 import api from '../utils/api'
 import { FileItem, StorageDrive } from '../types'
@@ -84,10 +84,20 @@ export default function StoragePage() {
     loadFiles()
   }
 
+  const [favorites, setFavorites] = useState<string[]>([])
+  useEffect(() => {
+    api.get('/favorites').then(r => setFavorites(r.data.map((f: any) => f.file_path))).catch(() => {})
+  }, [])
+
+  const toggleFav = async (path: string) => {
+    const r = await api.post('/favorites/toggle', { file_path: path })
+    if (r.data.favorited) setFavorites(prev => [...prev, path])
+    else setFavorites(prev => prev.filter(p => p !== path))
+  }
+
   const handleDelete = async (file: FileItem) => {
     await api.delete('/storage/files/delete', { data: { path: file.path } })
     loadFiles()
-    setContextMenu(null)
   }
 
   const handleNewFolder = async () => {
@@ -198,9 +208,13 @@ export default function StoragePage() {
       ) : view === 'grid' ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
           {files.map(f => (
-            <div key={f.path} className="glass-card" style={{ padding: 12, cursor: 'pointer', textAlign: 'center' }}
+            <div key={f.path} className="glass-card" style={{ padding: 12, cursor: 'pointer', textAlign: 'center', position: 'relative' }}
               onDoubleClick={() => handlePreview(f)}
               onContextMenu={e => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, file: f }) }}>
+              <button className="btn btn-ghost btn-icon btn-sm" style={{ position: 'absolute', top: 4, right: 4, color: favorites.includes(f.path) ? 'var(--warning)' : 'var(--text-muted)' }}
+                onClick={e => { e.stopPropagation(); toggleFav(f.path) }}>
+                <Star size={12} fill={favorites.includes(f.path) ? 'var(--warning)' : 'none'} />
+              </button>
               <div style={{ fontSize: 32, marginBottom: 8, display: 'flex', justifyContent: 'center' }}>
                 <FileIcon ext={f.ext} type={f.type} />
               </div>
@@ -211,13 +225,17 @@ export default function StoragePage() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 100px 160px 60px', gap: 8, padding: '8px 12px', fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--glass-border)' }}>
-            <span></span><span>Name</span><span>Size</span><span>Modified</span><span></span>
+          <div style={{ display: 'grid', gridTemplateColumns: '24px auto 1fr 100px 160px 80px', gap: 8, padding: '8px 12px', fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--glass-border)' }}>
+            <span></span><span></span><span>Name</span><span>Size</span><span>Modified</span><span></span>
           </div>
           {files.map(f => (
-            <div key={f.path} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 100px 160px 60px', gap: 8, padding: '8px 12px', alignItems: 'center', cursor: 'pointer', borderRadius: 4 }}
+            <div key={f.path} style={{ display: 'grid', gridTemplateColumns: '24px auto 1fr 100px 160px 80px', gap: 8, padding: '8px 12px', alignItems: 'center', cursor: 'pointer', borderRadius: 4 }}
               onDoubleClick={() => handlePreview(f)}
               onContextMenu={e => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, file: f }) }}>
+              <button className="btn btn-ghost btn-icon btn-sm" style={{ color: favorites.includes(f.path) ? 'var(--warning)' : 'var(--text-muted)' }}
+                onClick={e => { e.stopPropagation(); toggleFav(f.path) }}>
+                <Star size={12} fill={favorites.includes(f.path) ? 'var(--warning)' : 'none'} />
+              </button>
               <FileIcon ext={f.ext} type={f.type} />
               {renameTarget?.path === f.path ? (
                 <input value={renameValue} onChange={e => setRenameValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleRename()} onBlur={() => setRenameTarget(null)} autoFocus style={{ height: 28, fontSize: 13 }} />

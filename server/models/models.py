@@ -94,3 +94,131 @@ class AppModule(db.Model):
     route = db.Column(db.String(80))
     installed = db.Column(db.Boolean, default=False)
     built_in = db.Column(db.Boolean, default=False)
+
+class Popup(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=gen_id)
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    popup_type = db.Column(db.String(40), default='info')
+    created_by = db.Column(db.String(64), db.ForeignKey('user.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    active = db.Column(db.Boolean, default=True)
+
+class PopupView(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=gen_id)
+    popup_id = db.Column(db.String(64), db.ForeignKey('popup.id'))
+    user_id = db.Column(db.String(64), db.ForeignKey('user.id'))
+    viewed_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class TrashItem(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=gen_id)
+    original_path = db.Column(db.String(1024), nullable=False)
+    storage_path = db.Column(db.String(1024), nullable=False)
+    file_name = db.Column(db.String(256), nullable=False)
+    file_size = db.Column(db.BigInteger, default=0)
+    deleted_by = db.Column(db.String(64), db.ForeignKey('user.id'))
+    deleted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime)
+
+class ShareLink(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=gen_id)
+    file_path = db.Column(db.String(1024), nullable=False)
+    file_name = db.Column(db.String(256))
+    token = db.Column(db.String(128), unique=True, nullable=False)
+    password = db.Column(db.String(256))
+    expires_at = db.Column(db.DateTime)
+    max_downloads = db.Column(db.Integer, default=0)
+    download_count = db.Column(db.Integer, default=0)
+    created_by = db.Column(db.String(64), db.ForeignKey('user.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    active = db.Column(db.Boolean, default=True)
+
+class RecentFile(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=gen_id)
+    user_id = db.Column(db.String(64), db.ForeignKey('user.id'))
+    file_path = db.Column(db.String(1024), nullable=False)
+    file_name = db.Column(db.String(256))
+    file_type = db.Column(db.String(40))
+    accessed_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Favorite(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=gen_id)
+    user_id = db.Column(db.String(64), db.ForeignKey('user.id'))
+    file_path = db.Column(db.String(1024), nullable=False)
+    file_name = db.Column(db.String(256))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Note(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=gen_id)
+    user_id = db.Column(db.String(64), db.ForeignKey('user.id'))
+    title = db.Column(db.String(256), default='Untitled')
+    content = db.Column(db.Text, default='')
+    category = db.Column(db.String(40), default='personal')
+    pinned = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Todo(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=gen_id)
+    user_id = db.Column(db.String(64), db.ForeignKey('user.id'))
+    title = db.Column(db.String(512), nullable=False)
+    completed = db.Column(db.Boolean, default=False)
+    priority = db.Column(db.String(20), default='medium')
+    due_date = db.Column(db.DateTime)
+    category = db.Column(db.String(40), default='general')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Bookmark(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=gen_id)
+    user_id = db.Column(db.String(64), db.ForeignKey('user.id'))
+    title = db.Column(db.String(256))
+    url = db.Column(db.String(1024), nullable=False)
+    favicon = db.Column(db.String(1024))
+    folder = db.Column(db.String(80), default='General')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class AiProvider(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=gen_id)
+    user_id = db.Column(db.String(64), db.ForeignKey('user.id'))
+    name = db.Column(db.String(80), nullable=False)
+    provider_type = db.Column(db.String(40), nullable=False)
+    api_key = db.Column(db.String(256), default='')
+    api_url = db.Column(db.String(256), default='')
+    models = db.Column(db.Text, default='[]')
+    default_model = db.Column(db.String(120), default='')
+    enabled = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class ChatAttachment(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=gen_id)
+    message_id = db.Column(db.String(64), db.ForeignKey('chat_message.id'))
+    user_id = db.Column(db.String(64), db.ForeignKey('user.id'))
+    file_name = db.Column(db.String(256))
+    file_path = db.Column(db.String(1024))
+    file_type = db.Column(db.String(80))
+    file_size = db.Column(db.BigInteger, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class GithubRepo(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=gen_id)
+    user_id = db.Column(db.String(64), db.ForeignKey('user.id'))
+    repo_full = db.Column(db.String(256), nullable=False)
+    repo_name = db.Column(db.String(120))
+    repo_owner = db.Column(db.String(120))
+    branch = db.Column(db.String(120), default='main')
+    access_token = db.Column(db.String(256), default='')
+    connected_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class BackupJob(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=gen_id)
+    user_id = db.Column(db.String(64), db.ForeignKey('user.id'))
+    name = db.Column(db.String(256), nullable=False)
+    source_path = db.Column(db.String(1024), nullable=False)
+    dest_path = db.Column(db.String(1024), nullable=False)
+    schedule = db.Column(db.String(40), default='manual')
+    enabled = db.Column(db.Boolean, default=True)
+    include_patterns = db.Column(db.Text, default='*')
+    exclude_patterns = db.Column(db.Text, default='')
+    last_run = db.Column(db.DateTime)
+    last_status = db.Column(db.String(20), default='never')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

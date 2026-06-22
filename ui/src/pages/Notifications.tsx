@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import {
   Bell, Check, CheckCheck, Trash2, Info, AlertTriangle,
-  AlertCircle, Mail, Home, MessageSquare, X
+  AlertCircle, Mail, Home, MessageSquare, X, PartyPopper, Gift, Megaphone
 } from 'lucide-react'
 import api from '../utils/api'
 import { Notification } from '../types'
+import { useAuth } from '../hooks/useAuth'
 
 const typeIcons: Record<string, React.ReactNode> = {
   info: <Info size={16} style={{ color: 'var(--info)' }} />,
@@ -16,12 +17,17 @@ const typeIcons: Record<string, React.ReactNode> = {
 }
 
 export default function NotificationsPage() {
+  const { user } = useAuth()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unread, setUnread] = useState(0)
   const [showSend, setShowSend] = useState(false)
   const [sendTitle, setSendTitle] = useState('')
   const [sendMsg, setSendMsg] = useState('')
   const [sendType, setSendType] = useState('info')
+  const [showPopupCreator, setShowPopupCreator] = useState(false)
+  const [popupTitle, setPopupTitle] = useState('')
+  const [popupMsg, setPopupMsg] = useState('')
+  const [popupType, setPopupType] = useState('celebration')
 
   useEffect(() => {
     api.get('/notifications/').then(r => {
@@ -79,6 +85,38 @@ export default function NotificationsPage() {
             <button className="btn btn-ghost btn-sm" onClick={() => setShowSend(false)}>Cancel</button>
           </div>
         </div>
+      )}
+
+      {/* Admin Popup Creator */}
+      {user?.role === 'admin' && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowPopupCreator(!showPopupCreator)}>
+              <Megaphone size={14} /> {showPopupCreator ? 'Close' : 'Create Popup'}
+            </button>
+          </div>
+          {showPopupCreator && (
+            <div className="glass-card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8, borderLeft: '3px solid var(--accent)' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>New Popup Announcement</div>
+              <input placeholder="Popup title (e.g. Happy Father's Day!)" value={popupTitle} onChange={e => setPopupTitle(e.target.value)} style={{ height: 34, fontSize: 13 }} />
+              <textarea placeholder="Message body..." value={popupMsg} onChange={e => setPopupMsg(e.target.value)} style={{ height: 80, fontSize: 13, resize: 'vertical' }} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <select value={popupType} onChange={e => setPopupType(e.target.value)} style={{ width: 'auto', height: 34, fontSize: 13 }}>
+                  <option value="celebration">🎉 Celebration</option>
+                  <option value="holiday">🎁 Holiday</option>
+                  <option value="info">ℹ️ Info</option>
+                  <option value="alert">⚠️ Alert</option>
+                </select>
+                <button className="btn btn-primary btn-sm" onClick={async () => {
+                  if (!popupTitle.trim() || !popupMsg.trim()) return
+                  await api.post('/popups/create', { title: popupTitle, message: popupMsg, type: popupType })
+                  setPopupTitle(''); setPopupMsg(''); setShowPopupCreator(false)
+                }}>Publish Popup</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setShowPopupCreator(false)}>Cancel</button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* List */}

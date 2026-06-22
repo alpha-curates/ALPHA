@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import {
   Cpu, HardDrive, Thermometer, Activity,
   Monitor, Database, Wifi, Clock, Brain,
-  ExternalLink
+  ExternalLink, Star, History, File
 } from 'lucide-react'
 import api from '../utils/api'
 import { SystemStatus, StorageInfo, Device } from '../types'
+import PopupModal from '../components/common/PopupModal'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -14,20 +15,26 @@ export default function Dashboard() {
   const [storage, setStorage] = useState<StorageInfo | null>(null)
   const [devices, setDevices] = useState<Device[]>([])
   const [aiStatus, setAiStatus] = useState<any>(null)
+  const [recentFiles, setRecentFiles] = useState<any[]>([])
+  const [favFiles, setFavFiles] = useState<any[]>([])
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [sysRes, stoRes, devRes, aiRes] = await Promise.all([
+        const [sysRes, stoRes, devRes, aiRes, recentRes, favRes] = await Promise.all([
           api.get('/system/status'),
           api.get('/storage/status'),
           api.get('/devices/'),
-          api.get('/ai/status')
+          api.get('/ai/status'),
+          api.get('/recent'),
+          api.get('/favorites')
         ])
         setSys(sysRes.data)
         setStorage(stoRes.data)
         setDevices(devRes.data)
         setAiStatus(aiRes.data)
+        setRecentFiles(recentRes.data?.slice(0, 6) || [])
+        setFavFiles(favRes.data || [])
       } catch {}
     }
     load()
@@ -44,7 +51,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <>
+      <PopupModal />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* AI Setup Banner */}
       {aiStatus && !aiStatus.ollama && (
         <div className="glass-card" style={{
@@ -145,6 +154,46 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {(recentFiles.length > 0 || favFiles.length > 0) && (
+        <div className="grid-2" style={{ gap: 12 }}>
+          {recentFiles.length > 0 && (
+            <div className="glass-card" style={{ padding: 16 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <History size={16} /> Recent Files
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {recentFiles.map(r => (
+                  <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}
+                    onClick={() => navigate('/storage')}>
+                    <File size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.file_name}</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                      {new Date(r.accessed_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {favFiles.length > 0 && (
+            <div className="glass-card" style={{ padding: 16 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Star size={16} /> Favorites
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {favFiles.slice(0, 6).map(f => (
+                  <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}
+                    onClick={() => navigate('/storage')}>
+                    <Star size={12} fill="var(--warning)" style={{ color: 'var(--warning)', flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.file_name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="glass-card" style={{ padding: 20 }}>
         <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Clock size={18} /> System Info
@@ -166,5 +215,6 @@ export default function Dashboard() {
         )}
       </div>
     </div>
+    </>
   )
 }

@@ -1,12 +1,13 @@
 from flask import Blueprint, jsonify, request, send_file
 from main import db
-from models.models import StorageDrive, StoragePool
-from flask_login import login_required
+from models.models import StorageDrive, StoragePool, TrashItem
+from flask_login import login_required, current_user
 import psutil
 import os
 import shutil
 import mimetypes
 import json
+from datetime import datetime
 
 storage_bp = Blueprint('storage', __name__)
 
@@ -190,11 +191,25 @@ def delete_file():
     full = safe_path(path)
     if not full:
         return jsonify({'error': 'Access denied'}), 403
-    if os.path.isfile(full):
-        os.remove(full)
-    elif os.path.isdir(full):
-        shutil.rmtree(full)
-    return jsonify({'message': 'Deleted'})
+    if not os.path.exists(full):
+        return jsonify({'error': 'Not found'}), 404
+    # Move to trash instead of permanent delete
+    trash_dir = os.path.join(BASE, '.trash')
+    os.makedirs(trash_dir, exist_ok=True)
+    rel = os.path.relpath(full, BASE)
+    trash_name = f"{os.path.basename(full)}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    trash_path = os.path.join(trash_dir, trash_name)
+    shutil.move(full, trash_path)
+    from models.models import TrashItem
+    size = 0
+    if os.path.isfile(trash_path):
+        size = os.path.getsize(trash_path)
+    elif os.path.isdir(trash_path):
+        size = sum(os.path.getsize(os.path.join(dp, f)) for dp, dn, fn in os.walk(trash_path) for f in fn) if os.path.exists(trash_path) else 0
+    item = TrashItem(original_path=rel, storage_path=trash_name, file_name=os.path.basename(full), file_size=size, deleted_by=current_user.id)
+    db.session.add(item)
+    db.session.commit()
+    return jsonify({'message': 'Moved to trash', 'trash_id': item.id})
 
 @storage_bp.route('/files/mkdir', methods=['POST'])
 @login_required
