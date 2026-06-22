@@ -21,27 +21,34 @@ import Layout from './components/layout/Layout'
 function AppRoutes() {
   const { user, loading } = useAuth()
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>ALPHA</div>
-  if (!user) return <Routes><Route path="*" element={<Login />} /></Routes>
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/storage" element={<StoragePage />} />
-        <Route path="/ai" element={<AIStudio />} />
-        <Route path="/devices" element={<DevicesPage />} />
-        <Route path="/extensions" element={<ExtensionsPage />} />
-        <Route path="/apps" element={<AppsPage />} />
-        <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/users" element={<UsersPage />} />
-        <Route path="/trash" element={<TrashPage />} />
-        <Route path="/shares" element={<SharesPage />} />
-        <Route path="/tools" element={<ToolsPage />} />
-        <Route path="/system-tools" element={<SystemToolsPage />} />
-        <Route path="/display" element={<DisplayPage />} />
-        <Route path="*" element={<Dashboard />} />
-      </Routes>
-    </Layout>
+    <Routes>
+      <Route path="/display" element={<DisplayPage />} />
+      {!user ? (
+        <Route path="*" element={<Login />} />
+      ) : (
+        <Route path="*" element={
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/storage" element={<StoragePage />} />
+              <Route path="/ai" element={<AIStudio />} />
+              <Route path="/devices" element={<DevicesPage />} />
+              <Route path="/extensions" element={<ExtensionsPage />} />
+              <Route path="/apps" element={<AppsPage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/users" element={<UsersPage />} />
+              <Route path="/trash" element={<TrashPage />} />
+              <Route path="/shares" element={<SharesPage />} />
+              <Route path="/tools" element={<ToolsPage />} />
+              <Route path="/system-tools" element={<SystemToolsPage />} />
+              <Route path="*" element={<Dashboard />} />
+            </Routes>
+          </Layout>
+        } />
+      )}
+    </Routes>
   )
 }
 

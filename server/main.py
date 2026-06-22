@@ -1,10 +1,10 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from config import Config
-import jwt
+import jwt, os
 
 db = SQLAlchemy()
 socketio = SocketIO(cors_allowed_origins="*")
@@ -30,6 +30,8 @@ def create_app():
     def load_user_from_request(req):
         from models.models import User
         auth = req.headers.get('Authorization', '').replace('Bearer ', '')
+        if not auth:
+            auth = req.args.get('token', '')
         if not auth:
             return None
         try:
@@ -77,6 +79,22 @@ def create_app():
     @app.route('/api/status')
     def status():
         return jsonify({'status': 'online', 'name': 'ALPHA', 'version': '1.0.0'})
+
+    # Serve built frontend for SPA routes
+    frontend_dir = os.path.join(os.path.dirname(__file__), '..', 'ui', 'dist')
+
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve_frontend(path):
+        if path.startswith('api/') or path == 'api':
+            return jsonify({'error': 'Not found'}), 404
+        full_path = os.path.join(frontend_dir, path)
+        if path and os.path.exists(full_path) and os.path.isfile(full_path):
+            return send_from_directory(frontend_dir, path)
+        index_path = os.path.join(frontend_dir, 'index.html')
+        if os.path.exists(index_path):
+            return send_from_directory(frontend_dir, 'index.html')
+        return jsonify({'error': 'Frontend not built. Run: cd ui && npm run build'}), 503
 
     with app.app_context():
         db.create_all()

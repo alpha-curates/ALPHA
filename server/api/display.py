@@ -30,6 +30,7 @@ def display_status():
     except: pass
 
     # System health check
+    cpu = mem = disk = 0
     try:
         import psutil
         cpu = psutil.cpu_percent(interval=0.5)
@@ -57,7 +58,12 @@ def display_status():
 
     return jsonify({
         'faults': faults[:8],
-        'ollama': ollama_ok,
+        'ollama': {'healthy': ollama_ok},
+        'system': {
+            'cpu_percent': cpu,
+            'memory_percent': mem,
+            'disk_percent': disk,
+        },
         'theme': theme,
         'hostname': os.uname().nodename,
         'time': datetime.datetime.now().strftime('%H:%M'),

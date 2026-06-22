@@ -24,12 +24,23 @@ export default function DisplayPage() {
   const recognitionRef = useRef<any>(null)
   const pollRef = useRef<number>(0)
 
+  // Accept token from URL query param (for kiosk)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('token')
+    if (token) {
+      localStorage.setItem('token', token)
+      // Remove token from URL
+      window.history.replaceState({}, '', '/display')
+    }
+  }, [])
+
   // Poll for status updates
   const loadStatus = useCallback(async () => {
     try {
       const r = await api.get('/display/status')
       setFaults(r.data.faults || [])
-      setOllamaOk(r.data.ollama)
+      setOllamaOk(r.data.ollama?.healthy ?? r.data.ollama)
       setTheme(r.data.theme || { accent: '#6c5ce7', wallpaper: '' })
       setHostname(r.data.hostname)
       setTimeStr(r.data.time)
