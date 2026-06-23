@@ -11,7 +11,7 @@ chmod +x installer/install.sh
 ./installer/install.sh
 ```
 
-Then open **http://localhost:3000** and register the first account (becomes admin).
+Then open **http://<YOUR-PI-IP>:5000** and register the first account (becomes admin).
 
 ## Manual Install
 
@@ -25,7 +25,7 @@ pip install -r requirements.txt
 python3 server/run.py
 ```
 
-API runs on **http://localhost:5000**
+API runs on **http://<YOUR-PI-ADRESS>:5000**
 
 ### 2. Frontend
 
@@ -37,7 +37,7 @@ npm run build    # production build
 npm run dev      # development with hot reload
 ```
 
-UI runs on **http://localhost:3000** (dev) or from the built `dist/` folder.
+UI runs on **http://<YOUR-PI-ADRESS>:3000** (dev) or from the built `dist/` folder.
 
 ### 3. AI (optional)
 
@@ -116,7 +116,6 @@ Use a secondary Raspberry Pi as a dedicated display for ALPHA:
 - **16×2 I2C LCD** — live status: faults, AI health, CPU, time
 - **Voice AI** — microphone input queries Ollama through the display
 
-See [Alpha-Cluster](https://github.com/TheC03L/Alpha-Cluster) for hardware wiring, LCD driver, and setup guide.
 
 ## Specs
 
