@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { Key, QrCode, Link, FileText, CheckSquare, Bookmark, Plus, Trash2, Pin, Edit3, Terminal } from 'lucide-react'
+import { Key, QrCode, Link, FileText, CheckSquare, Bookmark, Plus, Trash2, Pin, Edit3, Terminal, RotateCcw } from 'lucide-react'
 import api from '../utils/api'
 
 export default function ToolsPage() {
@@ -36,7 +36,7 @@ export default function ToolsPage() {
 }
 
 function TerminalTab() {
-  const [history, setHistory] = useState<{cmd: string; output: string}[]>([{cmd: '', output: 'ALPHA Terminal - Type a command and press Enter\n'}])
+  const [history, setHistory] = useState<{cmd: string; output: string}[]>([{cmd: '', output: 'ALPHA Terminal - persistent shell (type input freely when prompted)\n'}])
   const [cmd, setCmd] = useState('')
   const [running, setRunning] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
@@ -46,30 +46,48 @@ function TerminalTab() {
   const run = async () => {
     if (!cmd.trim() || running) return
     setRunning(true)
-    try {
-      const r = await api.post('/tools/terminal', { command: cmd })
-      setHistory(prev => [...prev, { cmd, output: r.data.output || '(no output)\n' }])
-    } catch {
-      setHistory(prev => [...prev, { cmd, output: 'Failed to run command\n' }])
-    }
+    const c = cmd
     setCmd('')
+    try {
+      const r = await api.post('/tools/terminal', { command: c })
+      setHistory(prev => [...prev, { cmd: c, output: r.data.output || '(no output)\n' }])
+    } catch {
+      setHistory(prev => [...prev, { cmd: c, output: 'Failed to run command\n' }])
+    }
     setRunning(false)
+  }
+
+  const reset = async () => {
+    try { await api.post('/tools/terminal/reset') } catch {}
+    setHistory([{cmd: '', output: 'ALPHA Terminal - session reset\n'}])
   }
 
   return (
     <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-      <div style={{ background: '#0a0a0a', padding: '12px 16px', fontFamily: 'monospace', fontSize: 13, minHeight: 300, maxHeight: 500, overflow: 'auto' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '6px 12px', background: 'rgba(0,0,0,0.3)',
+        borderBottom: '1px solid var(--glass-border)', fontSize: 11
+      }}>
+        <Terminal size={13} />
+        <span style={{ flex: 1, color: 'var(--text-muted)' }}>Type & press Enter – input goes to running process, not shell</span>
+        <button className="btn btn-ghost btn-icon btn-sm" onClick={reset} title="Reset terminal (kill stuck processes)">
+          <RotateCcw size={13} />
+        </button>
+      </div>
+      <div style={{ background: '#0a0a0a', padding: '8px 16px', fontFamily: 'monospace', fontSize: 13, minHeight: 280, maxHeight: 500, overflow: 'auto' }}>
         {history.map((h, i) => (
           <div key={i}>
             {h.cmd && <div style={{ color: 'var(--accent)' }}>$ {h.cmd}</div>}
             <div style={{ color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{h.output}</div>
           </div>
         ))}
+        {running && <div style={{ color: 'var(--warning)', fontSize: 11 }}>⏳ running...</div>}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
           <span style={{ color: 'var(--accent)' }}>$</span>
           <input value={cmd} onChange={e => setCmd(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') run() }}
-            placeholder="Type command..."
+            placeholder={running ? 'Waiting...' : 'Type command or input...'}
             disabled={running}
             style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: 13, outline: 'none', padding: 0 }}
             autoFocus />

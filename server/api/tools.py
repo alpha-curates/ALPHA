@@ -4,30 +4,80 @@ from models.models import Note, Todo, Bookmark
 from flask_login import login_required, current_user
 from datetime import datetime
 import hashlib, base64, json, os
+import subprocess, threading, time
 
 tools_bp = Blueprint('tools', __name__)
+
+# Persistent shell sessions per user
+_sessions = {}
+_sessions_lock = threading.Lock()
+
+def _get_session(user_id):
+    with _sessions_lock:
+        if user_id in _sessions:
+            s = _sessions[user_id]
+            if s['proc'].poll() is None:
+                return s
+            del _sessions[user_id]
+        proc = subprocess.Popen(
+            ['sh'],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True, bufsize=1
+        )
+        buf = []
+        def reader():
+            for line in iter(proc.stdout.readline, ''):
+                buf.append(line)
+        t = threading.Thread(target=reader, daemon=True)
+        t.start()
+        s = {'proc': proc, 'buf': buf, 'thread': t}
+        _sessions[user_id] = s
+        return s
+
+BLOCKED_CMDS = ['rm -rf /', 'rm -rf /*', 'mkfs', 'dd if=', ':(){ :|:& };:', '> /dev/sda']
 
 @tools_bp.route('/terminal', methods=['POST'])
 @login_required
 def run_command():
-    import subprocess, shlex
     data = request.json
     cmd = data.get('command', '')
     if not cmd.strip():
         return jsonify({'error': 'No command'}), 400
-    blocked = ['rm -rf /', 'rm -rf /*', 'mkfs', 'dd if=', ':(){ :|:& };:', '> /dev/sda']
-    if any(b in cmd for b in blocked):
+    if any(b in cmd for b in BLOCKED_CMDS):
         return jsonify({'output': 'Command blocked for safety\n'})
-    try:
-        result = subprocess.run(['sh', '-c', cmd], capture_output=True, text=True, timeout=30)
-        output = result.stdout + result.stderr
-        if len(output) > 10000:
-            output = output[:10000] + '\n... (truncated)'
-        return jsonify({'output': output or '(no output)\n', 'code': result.returncode})
-    except subprocess.TimeoutExpired:
-        return jsonify({'output': 'Command timed out (30s)\n'})
-    except Exception as e:
-        return jsonify({'output': f'Error: {e}\n'})
+
+    session = _get_session(str(current_user.id))
+    session['proc'].stdin.write(cmd + '\n')
+    session['proc'].stdin.flush()
+
+    output = []
+    deadline = time.time() + 2.0
+    while time.time() < deadline:
+        while session['buf']:
+            output.append(session['buf'].pop(0))
+        if output:
+            deadline = time.time() + 0.3
+        time.sleep(0.05)
+
+    result = ''.join(output)
+    if len(result) > 10000:
+        result = result[:10000] + '\n... (truncated)'
+    return jsonify({'output': result or '(no output)\n'})
+
+@tools_bp.route('/terminal/reset', methods=['POST'])
+@login_required
+def reset_terminal():
+    uid = str(current_user.id)
+    with _sessions_lock:
+        if uid in _sessions:
+            try:
+                _sessions[uid]['proc'].kill()
+            except:
+                pass
+            del _sessions[uid]
+    return jsonify({'message': 'Terminal reset'})
 
 @tools_bp.route('/password', methods=['POST'])
 @login_required
