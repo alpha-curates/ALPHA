@@ -80,19 +80,13 @@ def check_update():
 @login_required
 def apply_update():
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    backup_path = f'{BACKUP_DIR}-{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}'
     try:
-        shutil.copytree(base_dir, backup_path, ignore=shutil.ignore_patterns('.venv', 'node_modules', '__pycache__', '.git', '*.db', 'storage'))
-        r = requests.get(f'https://api.github.com/repos/{ALPHA_REPO}/tarball/main', stream=True, timeout=30)
-        if r.status_code != 200:
-            return jsonify({'error': 'Failed to download update'}), 500
-        with tarfile.open(fileobj=io.BytesIO(r.content), mode='r:gz') as tar:
-            top_dir = tar.getnames()[0].split('/')[0]
-            for member in tar.getmembers():
-                if member.name.startswith(top_dir + '/'):
-                    member.name = member.name[len(top_dir) + 1:]
-                    if member.name and not any(member.name.startswith(p) for p in ['.venv/', 'node_modules/', 'ui/node_modules/', 'storage/']):
-                        tar.extract(member, base_dir)
-        return jsonify({'message': 'Update applied. Restarting...', 'backup': backup_path})
+        result = subprocess.run(['git', 'pull'], capture_output=True, text=True, cwd=base_dir, timeout=30)
+        if result.returncode == 0:
+            subprocess.run(['npm', 'run', 'build'], cwd=os.path.join(base_dir, 'ui'), capture_output=True, text=True, timeout=120)
+            return jsonify({'message': 'Update applied. Restarting...'})
+        return jsonify({'error': result.stderr or 'Git pull failed'}), 500
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Update timed out'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500

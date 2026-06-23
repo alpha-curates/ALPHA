@@ -19,6 +19,25 @@ def list_devices():
         'status': d.status, 'last_seen': d.last_seen.isoformat() if d.last_seen else None
     } for d in devices])
 
+@devices_bp.route('/add', methods=['POST'])
+@login_required
+def add_device():
+    data = request.json
+    name = data.get('name', '').strip()
+    if not name:
+        return jsonify({'error': 'Name required'}), 400
+    device = Device(
+        name=name,
+        device_type=data.get('type', 'unknown'),
+        ip_address=data.get('ip', ''),
+        mac_address=data.get('mac', ''),
+        status='approved',
+        last_seen=datetime.utcnow()
+    )
+    db.session.add(device)
+    db.session.commit()
+    return jsonify({'message': 'Device added', 'id': device.id}), 201
+
 @devices_bp.route('/scan', methods=['POST'])
 @login_required
 def scan_devices():
@@ -87,6 +106,15 @@ def rename_device(device_id):
         device.name = request.json.get('name', device.name)
         db.session.commit()
     return jsonify({'message': 'Device renamed'})
+
+@devices_bp.route('/<device_id>', methods=['DELETE'])
+@login_required
+def delete_device(device_id):
+    device = Device.query.get(device_id)
+    if device:
+        db.session.delete(device)
+        db.session.commit()
+    return jsonify({'message': 'Device removed'})
 
 @devices_bp.route('/<device_id>/remove', methods=['DELETE'])
 @login_required

@@ -201,8 +201,7 @@ export default function Dashboard() {
       )}
 
       {/* Monitoring Charts */}
-      {metrics.length > 1 && (
-        <div className="glass-card" style={{ padding: 20 }}>
+      <div className="glass-card" style={{ padding: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <h3 style={{ fontSize: 16, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
               <TrendingUp size={18} /> Live Metrics
@@ -217,6 +216,7 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
+          {metrics.length > 1 ? (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>CPU / Memory / Disk</div>
@@ -246,8 +246,14 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
           </div>
+          ) : (
+          <div className="empty-state" style={{ padding: 20 }}>
+            <TrendingUp size={32} />
+            <h3>Collecting data...</h3>
+            <p style={{ fontSize: 13 }}>Metrics will appear after the first collection cycle (up to 60s)</p>
+          </div>
+          )}
         </div>
-      )}
 
       {/* System Info */}
       <div className="glass-card" style={{ padding: 20 }}>

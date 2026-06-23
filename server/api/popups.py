@@ -42,6 +42,17 @@ def create():
     )
     db.session.add(popup)
     db.session.commit()
+
+    # Auto-create PopupView for all other users so it only shows for target user
+    target_user_id = data.get('target_user_id')
+    if target_user_id:
+        from models.models import User
+        all_users = User.query.filter(User.id != target_user_id).all()
+        for u in all_users:
+            view = PopupView(popup_id=popup.id, user_id=u.id)
+            db.session.add(view)
+        db.session.commit()
+
     return jsonify({'message': 'Popup created', 'id': popup.id}), 201
 
 @popups_bp.route('/<popup_id>/dismiss', methods=['POST'])

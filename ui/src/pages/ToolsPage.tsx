@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { Key, QrCode, Link, FileText, CheckSquare, Bookmark, Plus, Trash2, Pin, Edit3 } from 'lucide-react'
+import React, { useEffect, useState, useRef } from 'react'
+import { Key, QrCode, Link, FileText, CheckSquare, Bookmark, Plus, Trash2, Pin, Edit3, Terminal } from 'lucide-react'
 import api from '../utils/api'
 
 export default function ToolsPage() {
@@ -8,6 +8,7 @@ export default function ToolsPage() {
     { id: 'notes', label: 'Notes', icon: FileText },
     { id: 'todos', label: 'Todos', icon: CheckSquare },
     { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark },
+    { id: 'terminal', label: 'Terminal', icon: Terminal },
     { id: 'password', label: 'Password', icon: Key },
     { id: 'qrcode', label: 'QR Code', icon: QrCode },
     { id: 'shorten', label: 'Shorten', icon: Link },
@@ -26,9 +27,55 @@ export default function ToolsPage() {
       {tab === 'notes' && <NotesTab />}
       {tab === 'todos' && <TodosTab />}
       {tab === 'bookmarks' && <BookmarksTab />}
+      {tab === 'terminal' && <TerminalTab />}
       {tab === 'password' && <PasswordTab />}
       {tab === 'qrcode' && <QRCodeTab />}
       {tab === 'shorten' && <ShortenTab />}
+    </div>
+  )
+}
+
+function TerminalTab() {
+  const [history, setHistory] = useState<{cmd: string; output: string}[]>([{cmd: '', output: 'ALPHA Terminal - Type a command and press Enter\n'}])
+  const [cmd, setCmd] = useState('')
+  const [running, setRunning] = useState(false)
+  const endRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [history])
+
+  const run = async () => {
+    if (!cmd.trim() || running) return
+    setRunning(true)
+    try {
+      const r = await api.post('/tools/terminal', { command: cmd })
+      setHistory(prev => [...prev, { cmd, output: r.data.output || '(no output)\n' }])
+    } catch {
+      setHistory(prev => [...prev, { cmd, output: 'Failed to run command\n' }])
+    }
+    setCmd('')
+    setRunning(false)
+  }
+
+  return (
+    <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div style={{ background: '#0a0a0a', padding: '12px 16px', fontFamily: 'monospace', fontSize: 13, minHeight: 300, maxHeight: 500, overflow: 'auto' }}>
+        {history.map((h, i) => (
+          <div key={i}>
+            {h.cmd && <div style={{ color: 'var(--accent)' }}>$ {h.cmd}</div>}
+            <div style={{ color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{h.output}</div>
+          </div>
+        ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+          <span style={{ color: 'var(--accent)' }}>$</span>
+          <input value={cmd} onChange={e => setCmd(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') run() }}
+            placeholder="Type command..."
+            disabled={running}
+            style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: 13, outline: 'none', padding: 0 }}
+            autoFocus />
+        </div>
+        <div ref={endRef} />
+      </div>
     </div>
   )
 }

@@ -12,6 +12,13 @@ const iconMap: Record<string, React.ReactNode> = {
   'terminal': <Terminal size={24} />,
   'settings': <Settings size={24} />,
   'app': <Grid3X3 size={24} />,
+  'cloud': <Monitor size={24} />,
+  'calculator': <Grid3X3 size={24} />,
+  'camera': <Monitor size={24} />,
+  'radio': <Music size={24} />,
+  'book': <FileText size={24} />,
+  'edit': <FileText size={24} />,
+  'clock': <Calendar size={24} />,
 }
 
 export default function AppsPage() {

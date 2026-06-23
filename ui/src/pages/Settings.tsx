@@ -329,24 +329,6 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Finish AI Setup */}
-          <div className="glass-card" style={{ padding: 16, borderLeft: '3px solid var(--accent)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Zap size={20} style={{ color: 'var(--accent)' }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>Finish AI Setup</div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                  Install Ollama, pull a model, and configure your AI provider
-                </div>
-              </div>
-              <button className="btn btn-primary" onClick={() => navigate('/ai')}>
-                <Brain size={16} /> Open AI Studio
-              </button>
-            </div>
-          </div>
-
           {wifiMsg && (
             <div style={{ padding: '8px 12px', borderRadius: 8, fontSize: 13, background: wifiMsg.includes('failed') || wifiMsg.includes('Failed') ? 'var(--danger-dim)' : 'var(--success-dim)', color: wifiMsg.includes('failed') || wifiMsg.includes('Failed') ? 'var(--danger)' : 'var(--success)' }}>
               {wifiMsg}
@@ -455,12 +437,39 @@ export default function SettingsPage() {
       )}
 
       {tab === 'ai' && (
-        <div className="glass-card" style={{ padding: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 12 }}>AI Configuration</div>
-          <div style={{ display: 'grid', gap: 12 }}>
-            <div>
-              <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Ollama Server URL</label>
-              <input defaultValue="http://localhost:11434" style={{ maxWidth: 400 }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="glass-card" style={{ padding: 16 }}>
+            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 12 }}>AI Configuration</div>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Ollama Server URL</label>
+                <input defaultValue="http://localhost:11434" style={{ maxWidth: 400 }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-card" style={{ padding: 16, borderLeft: '3px solid var(--accent)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Zap size={20} style={{ color: 'var(--accent)' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>Finish AI Setup</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                  Install Ollama, pull a model, and configure your AI provider
+                </div>
+              </div>
+              <button className="btn btn-primary" onClick={async () => {
+                if (!confirm('Install Ollama and pull llama3.2:1b model? This may take several minutes.')) return
+                try {
+                  const r = await api.post('/ai/install-ollama')
+                  alert(r.data.message || 'Done!')
+                } catch (e: any) {
+                  alert(e.response?.data?.error || 'Installation failed')
+                }
+              }}>
+                <Zap size={16} /> Install & Setup
+              </button>
             </div>
           </div>
         </div>

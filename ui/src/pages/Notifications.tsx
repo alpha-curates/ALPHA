@@ -28,12 +28,15 @@ export default function NotificationsPage() {
   const [popupTitle, setPopupTitle] = useState('')
   const [popupMsg, setPopupMsg] = useState('')
   const [popupType, setPopupType] = useState('celebration')
+  const [popupTarget, setPopupTarget] = useState('all')
+  const [allUsers, setAllUsers] = useState<any[]>([])
 
   useEffect(() => {
     api.get('/notifications/').then(r => {
       setNotifications(r.data.notifications)
       setUnread(r.data.unread)
     }).catch(() => {})
+    api.get('/users/').then(r => setAllUsers(r.data)).catch(() => {})
   }, [])
 
   const markRead = async (id: string) => {
@@ -107,13 +110,27 @@ export default function NotificationsPage() {
                   <option value="info">ℹ️ Info</option>
                   <option value="alert">⚠️ Alert</option>
                 </select>
+                <select value={popupTarget} onChange={e => setPopupTarget(e.target.value)} style={{ width: 'auto', height: 34, fontSize: 13 }}>
+                  <option value="all">All Users</option>
+                  {allUsers.filter(u => u.id !== user?.id).map(u => (
+                    <option key={u.id} value={u.id}>{u.username}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn btn-primary btn-sm" onClick={async () => {
                   if (!popupTitle.trim() || !popupMsg.trim()) return
-                  await api.post('/popups/create', { title: popupTitle, message: popupMsg, type: popupType })
+                  await api.post('/popups/create', {
+                    title: popupTitle, message: popupMsg, type: popupType,
+                    target_user_id: popupTarget === 'all' ? null : popupTarget
+                  })
                   setPopupTitle(''); setPopupMsg(''); setShowPopupCreator(false)
                 }}>Publish Popup</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => setShowPopupCreator(false)}>Cancel</button>
               </div>
+              {popupTarget !== 'all' && (
+                <div style={{ fontSize: 11, color: 'var(--info)' }}>This popup will only show for the selected user</div>
+              )}
             </div>
           )}
         </>

@@ -561,3 +561,31 @@ def export_conversation(conv_id):
             'messages': [{'role': m.role, 'content': m.content, 'created_at': m.created_at.isoformat()} for m in msgs]
         })
     return Response('\n\n'.join(lines), mimetype='text/plain', headers={'Content-Disposition': f'attachment; filename="{conv.title}.txt"'})
+
+@ai_bp.route('/install-ollama', methods=['POST'])
+@login_required
+def install_ollama():
+    import subprocess
+    try:
+        result = subprocess.run(
+            ['curl', '-fsSL', 'https://ollama.com/install.sh'],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode != 0:
+            return jsonify({'error': 'Failed to download installer'}), 500
+        install_result = subprocess.run(
+            ['sh'], input=result.stdout, capture_output=True, text=True, timeout=120
+        )
+        if install_result.returncode == 0:
+            pull_result = subprocess.run(
+                ['ollama', 'pull', 'llama3.2:1b'],
+                capture_output=True, text=True, timeout=300
+            )
+            if pull_result.returncode == 0:
+                return jsonify({'message': 'Ollama installed and llama3.2:1b model pulled!'})
+            return jsonify({'message': 'Ollama installed. Model pull: ' + (pull_result.stderr or 'checking...')})
+        return jsonify({'error': install_result.stderr or 'Install failed'}), 500
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Installation timed out'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

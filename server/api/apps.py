@@ -11,6 +11,15 @@ BUILTIN_APPS = [
     {'name': 'calendar', 'display_name': 'Calendar', 'icon': 'calendar', 'description': 'View and manage events', 'route': '/apps/calendar'},
     {'name': 'terminal', 'display_name': 'Terminal', 'icon': 'terminal', 'description': 'Web-based terminal', 'route': '/apps/terminal'},
     {'name': 'settings', 'display_name': 'Settings', 'icon': 'settings', 'description': 'System settings', 'route': '/settings'},
+    {'name': 'weather', 'display_name': 'Weather', 'icon': 'cloud', 'description': 'Weather forecast and radar', 'route': '/apps/weather'},
+    {'name': 'calculator', 'display_name': 'Calculator', 'icon': 'calculator', 'description': 'Scientific calculator', 'route': '/apps/calculator'},
+    {'name': 'camera', 'display_name': 'Camera', 'icon': 'camera', 'description': 'Security camera viewer', 'route': '/apps/camera'},
+    {'name': 'music', 'display_name': 'Music Player', 'icon': 'music', 'description': 'Audio music player', 'route': '/apps/music'},
+    {'name': 'podcast', 'display_name': 'Podcasts', 'icon': 'radio', 'description': 'Podcast player and subscriptions', 'route': '/apps/podcast'},
+    {'name': 'ebooks', 'display_name': 'E-Books', 'icon': 'book', 'description': 'Read and manage e-books', 'route': '/apps/ebooks'},
+    {'name': 'draw', 'display_name': 'Whiteboard', 'icon': 'edit', 'description': 'Simple drawing and sketching', 'route': '/apps/draw'},
+    {'name': 'timer', 'display_name': 'Timer & Alarm', 'icon': 'clock', 'description': 'Countdown timer and alarms', 'route': '/apps/timer'},
+    {'name': 'radio', 'display_name': 'Internet Radio', 'icon': 'radio', 'description': 'Stream internet radio stations', 'route': '/apps/radio'},
 ]
 
 @apps_bp.route('/')

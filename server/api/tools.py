@@ -7,6 +7,28 @@ import hashlib, base64, json, os
 
 tools_bp = Blueprint('tools', __name__)
 
+@tools_bp.route('/terminal', methods=['POST'])
+@login_required
+def run_command():
+    import subprocess, shlex
+    data = request.json
+    cmd = data.get('command', '')
+    if not cmd.strip():
+        return jsonify({'error': 'No command'}), 400
+    blocked = ['rm -rf /', 'rm -rf /*', 'mkfs', 'dd if=', ':(){ :|:& };:', '> /dev/sda']
+    if any(b in cmd for b in blocked):
+        return jsonify({'output': 'Command blocked for safety\n'})
+    try:
+        result = subprocess.run(['sh', '-c', cmd], capture_output=True, text=True, timeout=30)
+        output = result.stdout + result.stderr
+        if len(output) > 10000:
+            output = output[:10000] + '\n... (truncated)'
+        return jsonify({'output': output or '(no output)\n', 'code': result.returncode})
+    except subprocess.TimeoutExpired:
+        return jsonify({'output': 'Command timed out (30s)\n'})
+    except Exception as e:
+        return jsonify({'output': f'Error: {e}\n'})
+
 @tools_bp.route('/password', methods=['POST'])
 @login_required
 def generate_password():

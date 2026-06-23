@@ -214,7 +214,7 @@ a:hover { color: var(--accent-hover); }
   border-radius: 8px;
 }
 
-input, textarea, select {
+input, textarea {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
@@ -226,12 +226,37 @@ input, textarea, select {
   transition: all 0.2s;
   width: 100%;
 }
-input:focus, textarea:focus, select:focus {
+input:focus, textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-dim);
 }
 input::placeholder {
   color: var(--text-muted);
+}
+
+select {
+  background: rgba(30, 30, 50, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s;
+  width: 100%;
+  cursor: pointer;
+  appearance: auto;
+  -webkit-appearance: auto;
+}
+select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+select option {
+  background: #1a1a2e;
+  color: var(--text-primary);
+  padding: 8px;
 }
 
 .layout {
