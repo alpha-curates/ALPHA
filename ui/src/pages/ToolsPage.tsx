@@ -242,7 +242,7 @@ function BookmarksTab() {
               </div>
             </div>
           )
-        )}
+        })}
       </div>
     </div>
   )
