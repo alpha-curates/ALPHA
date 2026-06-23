@@ -1,6 +1,6 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, Response, stream_with_context
 from main import db
-from models.models import AIModel, ChatMessage, ChatAttachment, AiProvider, GithubRepo
+from models.models import AIModel, ChatMessage, ChatAttachment, AiProvider, GithubRepo, Conversation
 from flask_login import login_required, current_user
 from config import Config
 from api.ai_providers import get_provider, get_provider_from_db, OllamaProvider
@@ -135,12 +135,12 @@ def chat():
     message = data.get('message', '')
     model = data.get('model', '')
     provider_id = data.get('provider_id', '')
+    conversation_id = data.get('conversation_id', '')
     attachment_ids = data.get('attachments', [])
 
     provider, _ = get_provider_for_user(provider_id)
     if not model: model = provider.model or 'llama3.2:1b'
 
-    # Include attachment contents in context
     context = message
     if attachment_ids:
         files = ChatAttachment.query.filter(ChatAttachment.id.in_(attachment_ids), ChatAttachment.user_id == current_user.id).all()
@@ -153,7 +153,7 @@ def chat():
                     context = f"[Attached file: {f.file_name}]\n```\n{content}\n```\n\n{message}"
                 except: pass
 
-    user_msg = ChatMessage(user_id=current_user.id, role='user', content=context, model=model)
+    user_msg = ChatMessage(user_id=current_user.id, role='user', content=context, model=model, conversation_id=conversation_id or None)
     db.session.add(user_msg)
     db.session.flush()
 
@@ -163,24 +163,84 @@ def chat():
             att.message_id = user_msg.id
 
     try:
-        history = ChatMessage.query.filter_by(user_id=current_user.id).order_by(ChatMessage.created_at.desc()).limit(20).all()
+        history = ChatMessage.query.filter_by(user_id=current_user.id, conversation_id=conversation_id or None).order_by(ChatMessage.created_at.desc()).limit(20).all()
         history.reverse()
-        msgs = [{'role': m.role, 'content': m.content} for m in history[:-1]]  # all but current
+        msgs = [{'role': m.role, 'content': m.content} for m in history[:-1]]
         msgs.append({'role': 'user', 'content': context})
+        # Prepend system prompt if conversation has one
+        if conversation_id:
+            conv = db.session.get(Conversation, conversation_id)
+            if conv and conv.system_prompt:
+                msgs.insert(0, {'role': 'system', 'content': conv.system_prompt})
         response = provider.chat(msgs, model)
         if not response: response = 'No response from AI'
-        ai_msg = ChatMessage(user_id=current_user.id, role='assistant', content=response, model=model)
+        ai_msg = ChatMessage(user_id=current_user.id, role='assistant', content=response, model=model, conversation_id=conversation_id or None)
         db.session.add(ai_msg)
         db.session.commit()
+        if conversation_id:
+            conv = db.session.get(Conversation, conversation_id)
+            if conv and conv.title == 'New Chat':
+                conv.title = (message[:50] + '...') if len(message) > 50 else message
+                db.session.commit()
         return jsonify({'response': response, 'id': ai_msg.id, 'provider': provider.name})
     except Exception as e:
         db.session.commit()
         return jsonify({'response': f'AI error: {str(e)}', 'provider': provider.name})
 
+@ai_bp.route('/chat/stream', methods=['POST'])
+@login_required
+def chat_stream():
+    data = request.json
+    message = data.get('message', '')
+    model = data.get('model', '')
+    provider_id = data.get('provider_id', '')
+    conversation_id = data.get('conversation_id', '')
+
+    provider, _ = get_provider_for_user(provider_id)
+    if not model: model = provider.model or 'llama3.2:1b'
+
+    user_msg = ChatMessage(user_id=current_user.id, role='user', content=message, model=model, conversation_id=conversation_id or None)
+    db.session.add(user_msg)
+    db.session.flush()
+
+    history = ChatMessage.query.filter_by(user_id=current_user.id, conversation_id=conversation_id or None).order_by(ChatMessage.created_at.desc()).limit(20).all()
+    history.reverse()
+    msgs = [{'role': m.role, 'content': m.content} for m in history[:-1]]
+    msgs.append({'role': 'user', 'content': message})
+    if conversation_id:
+        conv = db.session.get(Conversation, conversation_id)
+        if conv and conv.system_prompt:
+            msgs.insert(0, {'role': 'system', 'content': conv.system_prompt})
+
+    def generate():
+        full_response = ''
+        try:
+            for token in provider.chat_stream(msgs, model):
+                full_response += token
+                yield f"data: {json.dumps({'token': token})}\n\n"
+            ai_msg = ChatMessage(user_id=current_user.id, role='assistant', content=full_response, model=model, conversation_id=conversation_id or None)
+            db.session.add(ai_msg)
+            if conversation_id:
+                conv = db.session.get(Conversation, conversation_id)
+                if conv and conv.title == 'New Chat' and message:
+                    conv.title = (message[:50] + '...') if len(message) > 50 else message
+            db.session.commit()
+            yield f"data: {json.dumps({'done': True, 'id': ai_msg.id, 'provider': provider.name})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream', headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
 @ai_bp.route('/history')
 @login_required
 def history():
-    msgs = ChatMessage.query.filter_by(user_id=current_user.id).order_by(ChatMessage.created_at).limit(50).all()
+    conversation_id = request.args.get('conversation_id', '')
+    query = ChatMessage.query.filter_by(user_id=current_user.id)
+    if conversation_id:
+        query = query.filter_by(conversation_id=conversation_id)
+    else:
+        query = query.filter_by(conversation_id=None)
+    msgs = query.order_by(ChatMessage.created_at).limit(50).all()
     return jsonify([{
         'id': m.id, 'role': m.role, 'content': m.content,
         'model': m.model, 'created_at': m.created_at.isoformat()
@@ -424,3 +484,80 @@ def github_disconnect(repo_id):
     db.session.delete(repo)
     db.session.commit()
     return jsonify({'message': 'Disconnected'})
+
+# ===== Conversations =====
+@ai_bp.route('/conversations')
+@login_required
+def list_conversations():
+    convs = Conversation.query.filter_by(user_id=current_user.id).order_by(Conversation.updated_at.desc()).all()
+    result = []
+    for c in convs:
+        msg_count = ChatMessage.query.filter_by(conversation_id=c.id).count()
+        result.append({
+            'id': c.id, 'title': c.title, 'system_prompt': c.system_prompt,
+            'provider_id': c.provider_id, 'model': c.model,
+            'message_count': msg_count,
+            'created_at': c.created_at.isoformat(), 'updated_at': c.updated_at.isoformat()
+        })
+    return jsonify(result)
+
+@ai_bp.route('/conversations', methods=['POST'])
+@login_required
+def create_conversation():
+    data = request.json
+    conv = Conversation(
+        user_id=current_user.id,
+        title=data.get('title', 'New Chat'),
+        system_prompt=data.get('system_prompt', ''),
+        provider_id=data.get('provider_id'),
+        model=data.get('model', '')
+    )
+    db.session.add(conv)
+    db.session.commit()
+    return jsonify({'id': conv.id, 'title': conv.title, 'message': 'Created'}), 201
+
+@ai_bp.route('/conversations/<conv_id>', methods=['PUT'])
+@login_required
+def update_conversation(conv_id):
+    conv = db.session.get(Conversation, conv_id)
+    if not conv or conv.user_id != current_user.id:
+        return jsonify({'error': 'Not found'}), 404
+    data = request.json
+    if 'title' in data: conv.title = data['title']
+    if 'system_prompt' in data: conv.system_prompt = data['system_prompt']
+    if 'provider_id' in data: conv.provider_id = data['provider_id']
+    if 'model' in data: conv.model = data['model']
+    db.session.commit()
+    return jsonify({'message': 'Updated'})
+
+@ai_bp.route('/conversations/<conv_id>', methods=['DELETE'])
+@login_required
+def delete_conversation(conv_id):
+    conv = db.session.get(Conversation, conv_id)
+    if not conv or conv.user_id != current_user.id:
+        return jsonify({'error': 'Not found'}), 404
+    ChatMessage.query.filter_by(conversation_id=conv_id).delete()
+    db.session.delete(conv)
+    db.session.commit()
+    return jsonify({'message': 'Deleted'})
+
+@ai_bp.route('/conversations/<conv_id>/export')
+@login_required
+def export_conversation(conv_id):
+    conv = db.session.get(Conversation, conv_id)
+    if not conv or conv.user_id != current_user.id:
+        return jsonify({'error': 'Not found'}), 404
+    msgs = ChatMessage.query.filter_by(conversation_id=conv_id).order_by(ChatMessage.created_at).all()
+    lines = [f"# {conv.title}", f"Model: {conv.model or 'default'}", f"Date: {conv.created_at.isoformat()}", '']
+    if conv.system_prompt:
+        lines.extend(['## System Prompt', conv.system_prompt, ''])
+    for m in msgs:
+        lines.append(f"**{m.role.capitalize()}**: {m.content}")
+    fmt = request.args.get('format', 'text')
+    if fmt == 'json':
+        return jsonify({
+            'title': conv.title, 'system_prompt': conv.system_prompt,
+            'model': conv.model, 'created_at': conv.created_at.isoformat(),
+            'messages': [{'role': m.role, 'content': m.content, 'created_at': m.created_at.isoformat()} for m in msgs]
+        })
+    return Response('\n\n'.join(lines), mimetype='text/plain', headers={'Content-Disposition': f'attachment; filename="{conv.title}.txt"'})

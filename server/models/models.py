@@ -71,6 +71,7 @@ class AIModel(db.Model):
 class ChatMessage(db.Model):
     id = db.Column(db.String(64), primary_key=True, default=gen_id)
     user_id = db.Column(db.String(64), db.ForeignKey('user.id'))
+    conversation_id = db.Column(db.String(64), db.ForeignKey('conversation.id'), nullable=True)
     role = db.Column(db.String(20))
     content = db.Column(db.Text)
     model = db.Column(db.String(120))
@@ -258,3 +259,13 @@ class BackupArchive(db.Model):
     includes_storage = db.Column(db.Boolean, default=False)
     created_by = db.Column(db.String(64), db.ForeignKey('user.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Conversation(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=gen_id)
+    user_id = db.Column(db.String(64), db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(256), default='New Chat')
+    system_prompt = db.Column(db.Text, default='')
+    provider_id = db.Column(db.String(64), db.ForeignKey('ai_provider.id'), nullable=True)
+    model = db.Column(db.String(120), default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
