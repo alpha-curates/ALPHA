@@ -194,13 +194,12 @@ def delete_file():
     if not os.path.exists(full):
         return jsonify({'error': 'Not found'}), 404
     # Move to trash instead of permanent delete
-    trash_dir = os.path.join(BASE, '.trash')
+    trash_dir = os.path.join(STORAGE_BASE, '.trash')
     os.makedirs(trash_dir, exist_ok=True)
-    rel = os.path.relpath(full, BASE)
+    rel = os.path.relpath(full, STORAGE_BASE)
     trash_name = f"{os.path.basename(full)}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     trash_path = os.path.join(trash_dir, trash_name)
     shutil.move(full, trash_path)
-    from models.models import TrashItem
     size = 0
     if os.path.isfile(trash_path):
         size = os.path.getsize(trash_path)
