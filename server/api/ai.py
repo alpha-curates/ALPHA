@@ -4,7 +4,7 @@ from models.models import AIModel, ChatMessage, ChatAttachment, AiProvider, Gith
 from flask_login import login_required, current_user
 from config import Config
 from api.ai_providers import get_provider, get_provider_from_db, OllamaProvider
-import requests, json, os, uuid, datetime, io, base64
+import requests, json, os, uuid, datetime, io, base64, subprocess, platform, psutil
 
 ai_bp = Blueprint('ai', __name__)
 STORAGE_BASE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'storage')
@@ -189,6 +189,88 @@ def chat():
         db.session.commit()
         return jsonify({'response': f'AI error: {str(e)}', 'provider': provider.name})
 
+SYSTEM_COMMANDS = {
+    'help': 'Show this help message',
+    'system': 'CPU, memory, and system status',
+    'memory': 'RAM usage details',
+    'storage': 'Disk usage',
+    'temperature': 'CPU temperature',
+    'processes': 'Top processes by CPU',
+    'uptime': 'How long the server has been running',
+    'restart': 'Restart the AlphaNAS server',
+    'clear': 'Clear the current conversation',
+}
+
+def _run_cmd(cmd):
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        return r.stdout or r.stderr or 'N/A'
+    except:
+        return 'N/A'
+
+def _exec_system_cmd(cmd_name):
+    cmd_name = cmd_name.lstrip('#').lower().strip()
+    if cmd_name == 'help':
+        lines = ['**Available #commands:**\n']
+        for k, v in SYSTEM_COMMANDS.items():
+            lines.append(f'- `#{k}` — {v}')
+        return '\n'.join(lines)
+    if cmd_name == 'system':
+        cpu = psutil.cpu_percent(interval=0.5)
+        mem = psutil.virtual_memory()
+        return (
+            f'**CPU:** {cpu}% ({psutil.cpu_count()} cores)\n'
+            f'**Memory:** {mem.percent}% ({mem.used//1024**3}.{mem.used%1024**3//1024**2:.0f} GB / {mem.total//1024**3}.{mem.total%1024**3//1024**2:.0f} GB)\n'
+            f'**Platform:** {platform.platform()}\n'
+            f'**Host:** {platform.node()}'
+        )
+    if cmd_name == 'memory':
+        mem = psutil.virtual_memory()
+        swap = psutil.swap_memory()
+        return (
+            f'**RAM:** {mem.percent}% used\n'
+            f'  Total: {mem.total//1024**3}.{mem.total%1024**3//1024**2:.0f} GB\n'
+            f'  Used: {mem.used//1024**3}.{mem.used%1024**3//1024**2:.0f} GB\n'
+            f'  Free: {mem.free//1024**3}.{mem.free%1024**3//1024**2:.0f} GB\n'
+            f'**Swap:** {swap.percent}% used ({swap.total//1024**3} GB)'
+        )
+    if cmd_name == 'storage':
+        usage = psutil.disk_usage('/')
+        return (
+            f'**Disk:** {usage.percent}% used\n'
+            f'  Total: {usage.total//1024**3}.{usage.total%1024**3//1024**2:.0f} GB\n'
+            f'  Used: {usage.used//1024**3}.{usage.used%1024**3//1024**2:.0f} GB\n'
+            f'  Free: {usage.free//1024**3}.{usage.free%1024**3//1024**2:.0f} GB'
+        )
+    if cmd_name == 'temperature':
+        temp = 'N/A'
+        try:
+            if os.path.exists('/sys/class/thermal/thermal_zone0/temp'):
+                with open('/sys/class/thermal/thermal_zone0/temp') as f:
+                    raw = round(int(f.read().strip()) / 1000, 1)
+                    if raw > 0: temp = f'{raw}°C'
+        except: pass
+        return f'**CPU Temperature:** {temp}'
+    if cmd_name == 'processes':
+        procs = sorted(psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']), key=lambda p: p.info.get('cpu_percent', 0) or 0, reverse=True)[:10]
+        lines = ['**Top Processes (by CPU):**\n']
+        for p in procs:
+            lines.append(f'  {p.info["pid"]:>6}  {p.info["name"] or "?":<20}  CPU {p.info.get("cpu_percent", 0):>5.1f}%  MEM {p.info.get("memory_percent", 0):>5.1f}%')
+        return '\n'.join(lines)
+    if cmd_name == 'uptime':
+        try:
+            sec = int(datetime.datetime.now().timestamp() - psutil.Process().create_time())
+        except:
+            sec = 0
+        d, r = divmod(sec, 86400); h, r = divmod(r, 3600); m, s = divmod(r, 60)
+        return f'**Uptime:** {d}d {h}h {m}m {s}s'
+    if cmd_name == 'restart':
+        subprocess.Popen(['sudo', 'systemctl', 'restart', 'alpha.service'], start_new_session=True)
+        return '**Restarting server...**'
+    if cmd_name == 'clear':
+        return '#CLEAR'
+    return f'Unknown command `#{cmd_name}`. Type `#help` to see available commands.'
+
 @ai_bp.route('/chat/stream', methods=['POST'])
 @login_required
 def chat_stream():
@@ -217,6 +299,27 @@ def chat_stream():
     def generate():
         full_response = ''
         try:
+            # Check for #commands
+            stripped = message.strip()
+            if stripped.startswith('#'):
+                cmd_result = _exec_system_cmd(stripped)
+                if cmd_result == '#CLEAR':
+                    yield f"data: {json.dumps({'token': '🧹 Conversation cleared'})}\n\n"
+                    yield f"data: {json.dumps({'done': True, 'clear': True})}\n\n"
+                    return
+                for token in cmd_result:
+                    pass
+                yield f"data: {json.dumps({'token': cmd_result})}\n\n"
+                ai_msg = ChatMessage(user_id=current_user.id, role='assistant', content=cmd_result, model='#command', conversation_id=conversation_id or None)
+                db.session.add(ai_msg)
+                if conversation_id:
+                    conv = db.session.get(Conversation, conversation_id)
+                    if conv and conv.title == 'New Chat' and message:
+                        conv.title = (message[:50] + '...') if len(message) > 50 else message
+                db.session.commit()
+                yield f"data: {json.dumps({'done': True, 'id': ai_msg.id, 'provider': '#command'})}\n\n"
+                return
+
             for token in provider.chat_stream(msgs, model):
                 full_response += token
                 yield f"data: {json.dumps({'token': token})}\n\n"

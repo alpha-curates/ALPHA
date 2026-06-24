@@ -34,6 +34,20 @@ function MarkdownContent({ content }: { content: string }) {
 export default function AIStudio() {
   const [messages, setMessages] = useState<ChatMsg[]>([])
   const [input, setInput] = useState('')
+  const [showCmdMenu, setShowCmdMenu] = useState(false)
+  const [cmdFilter, setCmdFilter] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const CMD_LIST = [
+    { cmd: 'help', desc: 'Show all commands' },
+    { cmd: 'system', desc: 'CPU, memory, system status' },
+    { cmd: 'memory', desc: 'RAM usage details' },
+    { cmd: 'storage', desc: 'Disk usage' },
+    { cmd: 'temperature', desc: 'CPU temperature' },
+    { cmd: 'processes', desc: 'Top processes' },
+    { cmd: 'uptime', desc: 'Server uptime' },
+    { cmd: 'restart', desc: 'Restart AlphaNAS' },
+    { cmd: 'clear', desc: 'Clear conversation' },
+  ]
   const [providers, setProviders] = useState<any[]>([])
   const [activeProvider, setActiveProvider] = useState<any>(null)
   const [activeModel, setActiveModel] = useState('')
@@ -486,8 +500,47 @@ export default function AIStudio() {
                   </div>
                 )}
               </div>
-              <input style={{ flex: 1, height: 38, fontSize: 13 }} placeholder="Message AI..." value={input}
-                onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()} />
+              <div style={{ flex: 1, position: 'relative' }}>
+                <input ref={inputRef} style={{ flex: 1, height: 38, fontSize: 13, width: '100%' }} placeholder='Message AI... (type "#" for commands)' value={input}
+                  onChange={e => {
+                    const v = e.target.value; setInput(v)
+                    const lastHash = v.lastIndexOf('#')
+                    if (lastHash >= 0 && (lastHash === 0 || v[lastHash-1] === ' ')) {
+                      const after = v.slice(lastHash + 1)
+                      if (!after.includes(' ')) { setShowCmdMenu(true); setCmdFilter(after) }
+                      else { setShowCmdMenu(false) }
+                    } else { setShowCmdMenu(false) }
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) { if (showCmdMenu) { setShowCmdMenu(false); return }; sendMessage() }
+                    if (e.key === 'Escape') setShowCmdMenu(false)
+                  }} />
+                {showCmdMenu && (
+                  <div style={{
+                    position: 'absolute', bottom: '100%', left: 0, right: 0,
+                    background: 'var(--bg-secondary)', border: '1px solid var(--glass-border)',
+                    borderRadius: 8, maxHeight: 200, overflow: 'auto', zIndex: 100,
+                    marginBottom: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                  }}>
+                    {CMD_LIST.filter(c => c.cmd.includes(cmdFilter)).map(c => (
+                      <div key={c.cmd} onClick={() => {
+                        const before = input.slice(0, input.lastIndexOf('#') + 1)
+                        setInput(before + c.cmd + ' ')
+                        setShowCmdMenu(false)
+                        setTimeout(() => inputRef.current?.focus(), 0)
+                      }} style={{
+                        padding: '8px 12px', cursor: 'pointer', fontSize: 13,
+                        borderBottom: '1px solid var(--glass-border)'
+                      }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-dim)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                        <span style={{ color: 'var(--accent)', fontWeight: 600 }}>#{c.cmd}</span>
+                        <span style={{ color: 'var(--text-muted)', marginLeft: 8, fontSize: 11 }}>{c.desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button className="btn btn-ghost btn-icon btn-sm" onClick={() => fileInput.current?.click()} title="Attach file">
                 <Paperclip size={16} />
               </button>
