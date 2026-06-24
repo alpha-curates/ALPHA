@@ -174,7 +174,10 @@ export default function AIStudio() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({
           message: msgText, model: activeModel,
-          provider_id: activeProvider?.id?.startsWith('__') ? '' : (activeProvider?.id || ''),
+          provider_id: activeProvider?.id,
+          provider_type: activeProvider?.type,
+          provider_api_url: activeProvider?.api_url,
+          provider_api_key: activeProvider?.api_key,
           conversation_id: convId
         }),
         signal: abortRef.current.signal
@@ -237,16 +240,25 @@ export default function AIStudio() {
       ])
       let provs = provRes.data || []
       const ollamaOnline = statusRes.data?.ollama === true
-      // Auto-add a virtual Ollama provider if Ollama is running but none configured
-      if (ollamaOnline && provs.length === 0) {
+      // Auto-add virtual providers if none configured
+      if (provs.length === 0) {
         const remoteModels = modelsRes.data?.remote || []
-        const models = remoteModels.length > 0
+        const ollamaModels = remoteModels.length > 0
           ? remoteModels.map((m: any) => m.name)
           : ['llama3.2:1b', 'llama3.2:3b', 'llama3.1:8b', 'mistral:7b']
-        provs = [{ id: '__ollama__', name: 'Ollama (local)', type: 'ollama', default_model: models[0] || 'llama3.2:1b', models }]
-        if (!activeProvider) {
-          setActiveProvider({ id: '__ollama__', name: 'Ollama (local)', type: 'ollama', model: models[0] || 'llama3.2:1b' })
-          setActiveModel(models[0] || 'llama3.2:1b')
+        if (ollamaOnline) {
+          provs.push({ id: '__ollama__', name: 'Ollama (local)', type: 'ollama', default_model: ollamaModels[0] || 'llama3.2:1b', models: ollamaModels })
+        }
+        // Add OpenCode Zen virtual provider (free cloud models, no API key)
+        provs.push({
+          id: '__opencode__', name: 'OpenCode Zen', type: 'openai',
+          api_url: 'https://api.opencode.ai/v1', api_key: '',
+          default_model: 'big-pickle',
+          models: ['big-pickle', 'deepseek-v4-flash-free', 'glm-5-free', 'kimi-k2.6-free']
+        })
+        if (!activeProvider && provs.length > 0) {
+          setActiveProvider(provs[0])
+          setActiveModel(provs[0].default_model || provs[0].models[0])
         }
       }
       setProviders(provs)

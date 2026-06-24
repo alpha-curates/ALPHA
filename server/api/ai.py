@@ -11,9 +11,20 @@ except: pass
 ai_bp = Blueprint('ai', __name__)
 STORAGE_BASE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'storage')
 
-def get_provider_for_user(provider_id=None):
+def get_provider_for_user(provider_id=None, data=None):
     """Get the active provider for the current user"""
     if provider_id:
+        # Virtual provider (not in DB)
+        if provider_id == '__opencode__':
+            from .ai_providers import OpenAICompatibleProvider
+            d = data or {}
+            return OpenAICompatibleProvider({
+                'api_key': d.get('provider_api_key', ''),
+                'api_url': d.get('provider_api_url', 'https://api.opencode.ai/v1'),
+                'default_model': d.get('model', 'big-pickle')
+            }), ['big-pickle', 'deepseek-v4-flash-free', 'glm-5-free', 'kimi-k2.6-free']
+        if provider_id == '__ollama__':
+            return OllamaProvider(), []
         dp = AiProvider.query.filter_by(id=provider_id, user_id=current_user.id, enabled=True).first()
         if dp: return get_provider_from_db(dp)
     # Check if user has any enabled provider
@@ -43,7 +54,16 @@ def status():
             'default_model': p.default_model, 'models': available[:20]
         })
     active = AiProvider.query.filter_by(user_id=current_user.id, enabled=True).first()
-    if active: result['active_provider'] = {'id': active.id, 'name': active.name, 'type': active.provider_type, 'model': active.default_model}
+    if active:
+        result['active_provider'] = {'id': active.id, 'name': active.name, 'type': active.provider_type, 'model': active.default_model}
+    elif not result['providers']:
+        # Add virtual OpenCode Zen provider
+        result['providers'].append({
+            'id': '__opencode__', 'name': 'OpenCode Zen', 'type': 'openai',
+            'default_model': 'big-pickle',
+            'models': ['big-pickle', 'deepseek-v4-flash-free', 'glm-5-free', 'kimi-k2.6-free']
+        })
+        result['active_provider'] = {'id': '__opencode__', 'name': 'OpenCode Zen', 'type': 'openai', 'model': 'big-pickle'}
     return jsonify(result)
 
 @ai_bp.route('/models')
@@ -142,7 +162,7 @@ def chat():
     conversation_id = data.get('conversation_id', '')
     attachment_ids = data.get('attachments', [])
 
-    provider, _ = get_provider_for_user(provider_id)
+    provider, _ = get_provider_for_user(provider_id, data)
     if not model: model = provider.model or 'llama3.2:1b'
 
     context = message
@@ -282,7 +302,7 @@ def chat_stream():
     provider_id = data.get('provider_id', '')
     conversation_id = data.get('conversation_id', '')
 
-    provider, _ = get_provider_for_user(provider_id)
+    provider, _ = get_provider_for_user(provider_id, data)
     if not model: model = provider.model or 'llama3.2:1b'
 
     user_msg = ChatMessage(user_id=current_user.id, role='user', content=message, model=model, conversation_id=conversation_id or None)
@@ -394,7 +414,7 @@ def file_intel():
     path = request.json.get('path', '')
     model = request.json.get('model', '')
     provider_id = request.json.get('provider_id', '')
-    provider, _ = get_provider_for_user(provider_id)
+    provider, _ = get_provider_for_user(provider_id, request.json)
     if not model: model = provider.model or 'llama3.2:1b'
     full = os.path.abspath(os.path.join(STORAGE_BASE, path.lstrip('/')))
     if not full.startswith(STORAGE_BASE) or not os.path.isfile(full):
@@ -414,7 +434,7 @@ def system_assistant():
     query = request.json.get('query', '')
     model = request.json.get('model', '')
     provider_id = request.json.get('provider_id', '')
-    provider, _ = get_provider_for_user(provider_id)
+    provider, _ = get_provider_for_user(provider_id, request.json)
     if not model: model = provider.model or 'llama3.2:1b'
     import psutil, platform as pf
     uptime_seconds = int(datetime.datetime.now().timestamp() - psutil.boot_time())
@@ -482,7 +502,7 @@ def generate_file():
     provider_id = data.get('provider_id', '')
     save_path = data.get('save_path', '')
     if not prompt: return jsonify({'error': 'No prompt'}), 400
-    provider, _ = get_provider_for_user(provider_id)
+    provider, _ = get_provider_for_user(provider_id, data)
     if not model: model = provider.model or 'llama3.2:1b'
 
     type_prompts = {
@@ -566,7 +586,7 @@ def github_analyze(repo_id):
     repo = GithubRepo.query.filter_by(id=repo_id, user_id=current_user.id).first()
     if not repo: return jsonify({'error': 'Not found'}), 404
     file_path = request.json.get('path', '')
-    provider, _ = get_provider_for_user(request.json.get('provider_id', ''))
+    provider, _ = get_provider_for_user(request.json.get('provider_id', ''), request.json)
     model = request.json.get('model', '') or provider.model or 'llama3.2:1b'
     headers = {'Authorization': f'token {repo.access_token}', 'Accept': 'application/vnd.github.v3+json'}
     url = f'https://api.github.com/repos/{repo.repo_full}/contents/{file_path}?ref={repo.branch}'
