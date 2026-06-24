@@ -38,30 +38,45 @@ export default function ToolsPage() {
 }
 
 function TerminalTab() {
-  const [history, setHistory] = useState<{cmd: string; output: string}[]>([{cmd: '', output: 'ALPHA Terminal - persistent shell (type input freely when prompted)\n'}])
+  const [lines, setLines] = useState<string[]>(['ALPHA Terminal - persistent shell\n'])
   const [cmd, setCmd] = useState('')
   const [running, setRunning] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [history])
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [lines])
+
+  useEffect(() => {
+    const es = new EventSource('/tools/terminal/stream')
+    es.onmessage = (e) => {
+      try {
+        const d = JSON.parse(e.data)
+        if (d.done) { setRunning(false); return }
+        if (d.output) {
+          setLines(prev => [...prev, d.output])
+        }
+      } catch {}
+    }
+    es.onerror = () => {}
+    return () => es.close()
+  }, [])
 
   const run = async () => {
     if (!cmd.trim() || running) return
     setRunning(true)
     const c = cmd
+    setLines(prev => [...prev, '$ ' + c + '\n'])
     setCmd('')
     try {
-      const r = await api.post('/tools/terminal', { command: c })
-      setHistory(prev => [...prev, { cmd: c, output: r.data.output || '(no output)\n' }])
+      await api.post('/tools/terminal/write', { command: c })
     } catch {
-      setHistory(prev => [...prev, { cmd: c, output: 'Failed to run command\n' }])
+      setLines(prev => [...prev, 'Failed to run command\n'])
+      setRunning(false)
     }
-    setRunning(false)
   }
 
   const reset = async () => {
     try { await api.post('/tools/terminal/reset') } catch {}
-    setHistory([{cmd: '', output: 'ALPHA Terminal - session reset\n'}])
+    setLines(['ALPHA Terminal - session reset\n'])
   }
 
   return (
@@ -72,16 +87,15 @@ function TerminalTab() {
         borderBottom: '1px solid var(--glass-border)', fontSize: 11
       }}>
         <Terminal size={13} />
-        <span style={{ flex: 1, color: 'var(--text-muted)' }}>Type & press Enter – input goes to running process, not shell</span>
+        <span style={{ flex: 1, color: 'var(--text-muted)' }}>Real-time terminal — output streams as it arrives</span>
         <button className="btn btn-ghost btn-icon btn-sm" onClick={reset} title="Reset terminal (kill stuck processes)">
           <RotateCcw size={13} />
         </button>
       </div>
       <div style={{ background: '#0a0a0a', padding: '8px 16px', fontFamily: 'monospace', fontSize: 13, minHeight: 280, maxHeight: 500, overflow: 'auto' }}>
-        {history.map((h, i) => (
-          <div key={i}>
-            {h.cmd && <div style={{ color: 'var(--accent)' }}>$ {h.cmd}</div>}
-            <div style={{ color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{h.output}</div>
+        {lines.map((line, i) => (
+          <div key={i} style={{ color: line.startsWith('$ ') ? 'var(--accent)' : 'var(--text-secondary)', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+            {line}
           </div>
         ))}
         {running && <div style={{ color: 'var(--warning)', fontSize: 11 }}>⏳ running...</div>}

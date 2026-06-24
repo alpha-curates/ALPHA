@@ -38,29 +38,64 @@ def _get_session(user_id):
 
 BLOCKED_CMDS = ['rm -rf /', 'rm -rf /*', 'mkfs', 'dd if=', ':(){ :|:& };:', '> /dev/sda']
 
+@tools_bp.route('/terminal/stream', methods=['GET'])
+@login_required
+def terminal_stream():
+    uid = str(current_user.id)
+    session = _get_session(uid)
+    def generate():
+        from flask import stream_with_context
+        idx = 0
+        try:
+            while True:
+                while idx < len(session['buf']):
+                    line = session['buf'][idx]
+                    idx += 1
+                    yield f"data: {json.dumps({'output': line})}\n\n"
+                if session['proc'].poll() is not None:
+                    yield f"data: {json.dumps({'done': True})}\n\n"
+                    break
+                time.sleep(0.03)
+        except GeneratorExit:
+            pass
+    return __import__('flask').Response(stream_with_context(generate()), mimetype='text/event-stream', headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+@tools_bp.route('/terminal/write', methods=['POST'])
+@login_required
+def terminal_write():
+    data = request.json
+    cmd = data.get('command', '')
+    if not cmd.strip():
+        return jsonify({'error': 'No command'}), 400
+    if any(b in cmd for b in BLOCKED_CMDS):
+        return jsonify({'ok': False, 'error': 'Blocked'})
+    session = _get_session(str(current_user.id))
+    session['proc'].stdin.write(cmd + '\n')
+    session['proc'].stdin.flush()
+    return jsonify({'ok': True})
+
 @tools_bp.route('/terminal', methods=['POST'])
 @login_required
 def run_command():
+    # Legacy POST endpoint - write command and return current buffer
     data = request.json
     cmd = data.get('command', '')
     if not cmd.strip():
         return jsonify({'error': 'No command'}), 400
     if any(b in cmd for b in BLOCKED_CMDS):
         return jsonify({'output': 'Command blocked for safety\n'})
-
     session = _get_session(str(current_user.id))
     session['proc'].stdin.write(cmd + '\n')
     session['proc'].stdin.flush()
-
+    # Collect whatever output is available immediately
     output = []
-    deadline = time.time() + 2.0
+    deadline = time.time() + 3.0
     while time.time() < deadline:
         while session['buf']:
             output.append(session['buf'].pop(0))
         if output:
-            deadline = time.time() + 0.3
+            deadline = time.time() + 0.5
         time.sleep(0.05)
-
     result = ''.join(output)
     if len(result) > 10000:
         result = result[:10000] + '\n... (truncated)'
