@@ -408,6 +408,43 @@ def remove_model():
         return jsonify({'message': f'Model {model_id} removed'})
     except Exception as e: return jsonify({'error': str(e)}), 500
 
+@ai_bp.route('/generate-zip', methods=['POST'])
+@login_required
+def generate_zip():
+    data = request.json
+    prompt = data.get('prompt', '')
+    model = data.get('model', '')
+    provider_id = data.get('provider_id', '')
+    if not prompt: return jsonify({'error': 'No prompt'}), 400
+    provider, _ = get_provider_for_user(provider_id, data)
+    if not model: model = provider.model or 'llama3.2:1b'
+
+    plan_prompt = "You are a project generator. Based on the user request, decide which files to create.\n"
+    plan_prompt += "Return ONLY a JSON array of objects with 'filename' and 'description' fields.\n"
+    plan_prompt += 'Example: [{"filename": "index.html", "description": "Main HTML page"}, {"filename": "style.css", "description": "Stylesheet"}]\n'
+    plan_prompt += "User request: " + prompt
+    try:
+        plan_resp = provider.chat([{'role': 'user', 'content': plan_prompt}], model)
+        import re, json as jmod
+        plan_json = re.search(r'\[.*?\]', plan_resp or '', re.DOTALL)
+        if not plan_json: return jsonify({'error': 'Could not plan project files'}), 500
+        files = jmod.loads(plan_json.group())
+
+        import io, zipfile, datetime as dt
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for fdef in files:
+                fname = fdef.get('filename', 'file.txt')
+                desc = fdef.get('description', '')
+                gen_prompt = "Generate the content for " + fname + ". " + desc + "\n"
+                gen_prompt += "User request: " + prompt + "\nOutput only the file content."
+                content = provider.chat([{'role': 'user', 'content': gen_prompt}], model) or ''
+                zf.writestr(fname, content)
+
+        b64 = __import__('base64').b64encode(buf.getvalue()).decode()
+        return jsonify({'zip': b64, 'files': files, 'filename': 'project_' + dt.datetime.now().strftime("%Y%m%d_%H%M%S") + '.zip'})
+    except Exception as e: return jsonify({'error': str(e)}), 500
+
 @ai_bp.route('/file-intel', methods=['POST'])
 @login_required
 def file_intel():
@@ -516,6 +553,7 @@ def generate_file():
         'sh': 'Generate a bash script.',
         'yaml': 'Generate YAML content.',
         'sql': 'Generate SQL queries.',
+        'svg': 'Generate SVG image code only. Output ONLY valid SVG markup wrapped in ```svg...``` or raw <svg>...</svg>.',
     }
     sys_prompt = type_prompts.get(file_type, 'Generate the requested content.')
     full_prompt = f"{sys_prompt}\nUser request: {prompt}\n\nOutput only the content, no extra text."

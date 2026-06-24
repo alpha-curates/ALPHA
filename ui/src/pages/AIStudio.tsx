@@ -673,43 +673,118 @@ function GenerateTab({ provider }: { provider: any }) {
   const [filename, setFilename] = useState('')
   const [savePath, setSavePath] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [mode, setMode] = useState<'single' | 'project'>('single')
+  const [projectFiles, setProjectFiles] = useState<any[]>([])
+  const [projectZip, setProjectZip] = useState('')
 
   const generate = async () => {
     if (!prompt.trim()) return
     setGenerating(true)
+    setResult('')
+    setProjectFiles([])
+    setProjectZip('')
     try {
-      const r = await api.post('/ai/generate-file', { prompt, file_type: fileType, provider_id: provider?.id || '' })
-      setResult(r.data.content); setFilename(r.data.filename); setSavePath(`/ai_generated/${r.data.filename}`)
+      if (mode === 'project') {
+        const r = await api.post('/ai/generate-zip', {
+          prompt, provider_id: provider?.id || '', model: provider?.model || ''
+        })
+        setProjectFiles(r.data.files || [])
+        setProjectZip(r.data.zip || '')
+        setFilename(r.data.filename || 'project.zip')
+      } else {
+        const r = await api.post('/ai/generate-file', {
+          prompt, file_type: fileType, provider_id: provider?.id || ''
+        })
+        setResult(r.data.content || '')
+        setFilename(r.data.filename || '')
+        setSavePath('/ai_generated/' + (r.data.filename || ''))
+      }
     } catch {} finally { setGenerating(false) }
   }
 
   const saveFile = async () => {
     if (!result || !savePath) return
-    try { await api.post('/ai/generate-file', { prompt, file_type: fileType, save_path: savePath, provider_id: provider?.id || '' }) } catch {}
+    try {
+      await api.post('/ai/generate-file', {
+        prompt, file_type: fileType, save_path: savePath, provider_id: provider?.id || ''
+      })
+    } catch {}
   }
+
+  const downloadZip = () => {
+    if (!projectZip) return
+    try {
+      const binary = atob(projectZip)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+      const blob = new Blob([bytes], { type: 'application/zip' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = filename
+      document.body.appendChild(a); a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {}
+  }
+
+  const isSvg = fileType === 'svg' && result
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflow: 'auto' }}>
       <div className="glass-card" style={{ padding: 14 }}>
-        <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>AI File Generator</h4>
-        <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-          {['txt', 'md', 'html', 'css', 'js', 'py', 'json', 'sh', 'sql', 'yaml'].map(t => (
-            <button key={t} className={`btn btn-sm ${fileType === t ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setFileType(t)} style={{ fontSize: 11 }}>{t}</button>
-          ))}
+        <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>AI Generator</h4>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+          <button className={`btn btn-sm ${mode === 'single' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setMode('single')} style={{ fontSize: 11 }}>Single File</button>
+          <button className={`btn btn-sm ${mode === 'project' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setMode('project')} style={{ fontSize: 11 }}>Project (ZIP)</button>
         </div>
-        <textarea placeholder="Describe what to generate..." value={prompt} onChange={e => setPrompt(e.target.value)} style={{ width: '100%', height: 80, fontSize: 13, resize: 'vertical' }} />
+        {mode === 'single' && (
+          <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+            {['txt', 'md', 'html', 'css', 'js', 'tsx', 'py', 'json', 'sh', 'sql', 'yaml', 'svg'].map(t => (
+              <button key={t} className={`btn btn-sm ${fileType === t ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setFileType(t)} style={{ fontSize: 11 }}>{t}</button>
+            ))}
+          </div>
+        )}
+        <textarea placeholder={mode === 'project' ? 'Describe a project to generate...' : 'Describe what to generate...'} value={prompt} onChange={e => setPrompt(e.target.value)} style={{ width: '100%', height: 80, fontSize: 13, resize: 'vertical' }} />
         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-          <button className="btn btn-primary btn-sm" onClick={generate} disabled={generating}><FileCode size={14} /> {generating ? 'Generating...' : 'Generate'}</button>
+          <button className="btn btn-primary btn-sm" onClick={generate} disabled={generating}>
+            <FileCode size={14} /> {generating ? 'Generating...' : mode === 'project' ? 'Generate Project' : 'Generate'}
+          </button>
         </div>
       </div>
-      {result && (
+
+      {mode === 'project' && projectZip && (
+        <div className="glass-card" style={{ padding: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <Download size={14} />
+            <span style={{ fontSize: 13, fontWeight: 500 }}>{filename}</span>
+            <div style={{ flex: 1 }} />
+            <button className="btn btn-primary btn-sm" onClick={downloadZip}><Download size={12} /> Download ZIP</button>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>Files in project:</div>
+          {projectFiles.map((f: any, i: number) => (
+            <div key={i} style={{ fontSize: 12, padding: '2px 0', color: 'var(--text-secondary)' }}>
+              {'📄 ' + f.filename + (f.description ? ' — ' + f.description : '')}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {result && mode === 'single' && (
         <div className="glass-card" style={{ padding: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 500 }}>{filename}</span>
             <div style={{ flex: 1 }} />
-            <button className="btn btn-primary btn-sm" onClick={saveFile}><Save size={12} /> Save</button>
+            {fileType !== 'svg' && (
+              <button className="btn btn-primary btn-sm" onClick={saveFile}><Save size={12} /> Save</button>
+            )}
           </div>
-          <pre style={{ fontSize: 12, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 400, overflow: 'auto', padding: 12, background: '#0a0a0a', borderRadius: 8, fontFamily: 'monospace' }}>{result}</pre>
+          {isSvg ? (
+            <div style={{ background: '#fff', borderRadius: 8, padding: 16, display: 'flex', justifyContent: 'center' }}>
+              <img src={'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(result)))} alt="Generated SVG" style={{ maxWidth: '100%', maxHeight: 400 }} />
+            </div>
+          ) : (
+            <pre style={{ fontSize: 12, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 400, overflow: 'auto', padding: 12, background: '#0a0a0a', borderRadius: 8, fontFamily: 'monospace' }}>{result}</pre>
+          )}
         </div>
       )}
     </div>
