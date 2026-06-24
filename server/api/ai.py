@@ -20,7 +20,7 @@ def get_provider_for_user(provider_id=None, data=None):
             d = data or {}
             return OpenAICompatibleProvider({
                 'api_key': d.get('provider_api_key', ''),
-                'api_url': d.get('provider_api_url', 'https://api.opencode.ai'),
+                'api_url': d.get('provider_api_url', 'https://opencode.ai/zen'),
                 'default_model': d.get('model', 'big-pickle')
             }), ['big-pickle', 'deepseek-v4-flash-free', 'glm-5-free', 'kimi-k2.6-free']
         if provider_id == '__ollama__':

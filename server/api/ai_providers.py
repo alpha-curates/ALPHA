@@ -102,13 +102,19 @@ class OpenAICompatibleProvider(BaseProvider):
 
     def chat_stream(self, messages, model=''):
         model = model or self.model or 'gpt-3.5-turbo'
-        headers = {'Authorization': f'Bearer {self.api_key}', 'Content-Type': 'application/json'}
+        headers = {'Content-Type': 'application/json'}
+        if self.api_key:
+            headers['Authorization'] = f'Bearer {self.api_key}'
         body = {'model': model, 'messages': messages, 'max_tokens': 4096, 'stream': True}
         try:
             r = requests.post(f'{self.api_url}/v1/chat/completions', json=body, headers=headers, stream=True, timeout=120)
+            if r.status_code != 200:
+                yield f'\nAPI error: {r.status_code} - {r.text[:200]}'
+                return
             for line in r.iter_lines():
                 if line:
                     text = line.decode() if isinstance(line, bytes) else line
+                    if not text: continue
                     if text.startswith('data: '):
                         data_str = text[6:]
                         if data_str.strip() == '[DONE]': break
@@ -118,7 +124,8 @@ class OpenAICompatibleProvider(BaseProvider):
                             token = delta.get('content', '')
                             if token: yield token
                         except: continue
-        except: yield '\n[Stream error]'
+        except Exception as e:
+            yield f'\n[Error: {e}]'
 
     def list_models(self):
         headers = {'Authorization': f'Bearer {self.api_key}'}

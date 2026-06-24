@@ -252,7 +252,7 @@ export default function AIStudio() {
         // Add OpenCode Zen virtual provider (free cloud models, no API key)
         provs.push({
           id: '__opencode__', name: 'OpenCode Zen', type: 'openai',
-          api_url: 'https://api.opencode.ai', api_key: '',
+          api_url: 'https://opencode.ai/zen', api_key: '',
           default_model: 'big-pickle',
           models: ['big-pickle', 'deepseek-v4-flash-free', 'glm-5-free', 'kimi-k2.6-free']
         })
@@ -622,7 +622,7 @@ function ProvidersTab({ providers, onUpdate }: { providers: any[]; onUpdate: () 
     claude: { url: '', models: ['claude-3-haiku-20240307', 'claude-3-sonnet-20240229', 'claude-3-opus-20240229', 'claude-3-5-sonnet-20241022'] },
     ollama: { url: 'http://localhost:11434', models: ['llama3.2:1b', 'llama3.2:3b', 'llama3.1:8b', 'mistral:7b', 'codellama:7b',
         'gemma4:e2b', 'gemma4:12b', 'gemma4:e4b', 'nemotron-3-ultra:cloud', 'deepseek-v4-flash:cloud', 'qwen3.5:cloud'] },
-    opencode: { url: 'https://api.opencode.ai', models: ['big-pickle', 'deepseek-v4-flash-free', 'glm-5-free', 'kimi-k2.6-free'] },
+    opencode: { url: 'https://opencode.ai/zen', models: ['big-pickle', 'deepseek-v4-flash-free', 'glm-5-free', 'kimi-k2.6-free'] },
   }
 
   const typeChanged = (t: string) => { setType(t); setApiUrl(providerDefaults[t]?.url || '') }
