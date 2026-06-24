@@ -41,6 +41,15 @@ if ! command -v ollama &>/dev/null; then
     sleep 2
   done
 fi
+if ! curl -s http://localhost:11434/api/tags &>/dev/null; then
+  echo "Starting Ollama service..."
+  sudo systemctl enable ollama 2>/dev/null || true
+  sudo systemctl start ollama 2>/dev/null || true
+  for i in $(seq 1 15); do
+    if curl -s http://localhost:11434/api/tags &>/dev/null; then break; fi
+    sleep 2
+  done
+fi
 if ! ollama list 2>/dev/null | grep -q llama3.2; then
   echo "Pulling llama3.2:1b model..."
   ollama pull llama3.2:1b

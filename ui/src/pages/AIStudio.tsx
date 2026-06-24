@@ -229,23 +229,32 @@ export default function AIStudio() {
 
   const loadStatusAndProviders = useCallback(async () => {
     try {
-      const [statusRes, provRes, histRes] = await Promise.all([
+      const [statusRes, provRes, histRes, modelsRes] = await Promise.all([
         api.get('/ai/status'),
         api.get('/ai/providers'),
-        api.get('/ai/history')
+        api.get('/ai/history'),
+        api.get('/ai/models')
       ])
       let provs = provRes.data || []
       const ollamaOnline = statusRes.data?.ollama === true
       // Auto-add a virtual Ollama provider if Ollama is running but none configured
       if (ollamaOnline && provs.length === 0) {
-        const models = ['llama3.2:1b', 'llama3.2:3b', 'llama3.1:8b', 'mistral:7b']
-        provs = [{ id: '__ollama__', name: 'Ollama (local)', type: 'ollama', default_model: 'llama3.2:1b', models }]
+        const remoteModels = modelsRes.data?.remote || []
+        const models = remoteModels.length > 0
+          ? remoteModels.map((m: any) => m.name)
+          : ['llama3.2:1b', 'llama3.2:3b', 'llama3.1:8b', 'mistral:7b']
+        provs = [{ id: '__ollama__', name: 'Ollama (local)', type: 'ollama', default_model: models[0] || 'llama3.2:1b', models }]
         if (!activeProvider) {
-          setActiveProvider({ id: '__ollama__', name: 'Ollama (local)', type: 'ollama', model: 'llama3.2:1b' })
-          setActiveModel('llama3.2:1b')
+          setActiveProvider({ id: '__ollama__', name: 'Ollama (local)', type: 'ollama', model: models[0] || 'llama3.2:1b' })
+          setActiveModel(models[0] || 'llama3.2:1b')
         }
       }
       setProviders(provs)
+      if (ollamaOnline && provs.length > 0 && !activeProvider) {
+        const p = provs[0]
+        setActiveProvider(p)
+        setActiveModel(p.default_model || (p.models?.[0]) || 'llama3.2:1b')
+      }
       setMessages(histRes.data)
     } catch {}
   }, [])
