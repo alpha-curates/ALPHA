@@ -111,5 +111,7 @@ def create_app():
 
     from api.monitor import start_collector
     start_collector(app)
+    from api.storage import start_drive_watcher
+    start_drive_watcher(app)
 
     return app

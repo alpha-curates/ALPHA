@@ -33,6 +33,9 @@ export interface StorageDrive {
   used: number
   mount_point: string
   health: string
+  is_external?: boolean
+  storage_path?: string
+  uuid?: string
 }
 
 export interface FileItem {

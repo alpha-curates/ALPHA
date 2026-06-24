@@ -181,6 +181,23 @@ export default function StoragePage() {
         </div>
       )}
 
+      {/* External Drives */}
+      {drives.filter(d => d.is_external).length > 0 && (
+        <div className="glass-card" style={{ padding: '10px 14px' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: 'var(--text-muted)' }}>External Drives</div>
+          {drives.filter(d => d.is_external).map(d => (
+            <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: 12 }}>
+              <HardDrive size={14} style={{ color: 'var(--accent)' }} />
+              <span style={{ flex: 1 }}>{d.name || d.device}</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>{d.size ? formatSize(d.size) : '?'}</span>
+              <span style={{ fontSize: 11, color: d.health === 'healthy' ? 'var(--success)' : 'var(--danger)' }}>{d.health}</span>
+              <button className="btn btn-ghost btn-sm btn-icon" onClick={() => unmountDrive(d.id)} style={{ fontSize: 10, color: 'var(--text-muted)' }}
+                title="Safely remove"><Trash2 size={12} /></button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Toolbar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '2px' }}>

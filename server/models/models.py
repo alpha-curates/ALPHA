@@ -35,6 +35,9 @@ class StorageDrive(db.Model):
     health = db.Column(db.String(20), default='healthy')
     pool_id = db.Column(db.String(64), db.ForeignKey('storage_pool.id'), nullable=True)
     pool = db.relationship('StoragePool', backref=db.backref('drives', lazy=True))
+    storage_path = db.Column(db.String(256), default='')
+    is_external = db.Column(db.Boolean, default=False)
+    uuid = db.Column(db.String(80), default='')
 
 class Device(db.Model):
     id = db.Column(db.String(64), primary_key=True, default=gen_id)
