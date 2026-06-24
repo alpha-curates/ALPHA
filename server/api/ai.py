@@ -4,7 +4,9 @@ from models.models import AIModel, ChatMessage, ChatAttachment, AiProvider, Gith
 from flask_login import login_required, current_user
 from config import Config
 from api.ai_providers import get_provider, get_provider_from_db, OllamaProvider
-import requests, json, os, uuid, datetime, io, base64, subprocess, platform, psutil
+import requests, json, os, uuid, datetime, io, base64
+try: import subprocess, platform, psutil
+except: pass
 
 ai_bp = Blueprint('ai', __name__)
 STORAGE_BASE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'storage')
