@@ -23,6 +23,9 @@
 curl -sL https://raw.githubusercontent.com/vector-just-technology/Home-server/betar/install.sh | bash
 ```
 
+## NOTE ##
+This is a beta version. Use at your own risk!
+
 
 
 
