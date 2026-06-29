@@ -54,6 +54,17 @@ def get_processes():
     except:
         return jsonify([])
 
+@sys_tools_bp.route('/processes/kill', methods=['POST'])
+@login_required
+def kill_process():
+    pid = request.json.get('pid')
+    if not pid: return jsonify({'error': 'PID required'}), 400
+    try:
+        subprocess.run(['kill', str(pid)], timeout=5)
+        return jsonify({'message': f'Killed {pid}'})
+    except:
+        return jsonify({'error': f'Failed to kill {pid}'}), 500
+
 @sys_tools_bp.route('/disk-health')
 @login_required
 def disk_health():

@@ -17,6 +17,9 @@ import ToolsPage from './pages/ToolsPage'
 import SystemToolsPage from './pages/SystemToolsPage'
 import DownloadsPage from './pages/Downloads'
 import DisplayPage from './pages/Display'
+import ProcessesPage from './pages/ProcessesPage'
+import NotesPage from './pages/NotesPage'
+import BookmarksPage from './pages/BookmarksPage'
 import Layout from './components/layout/Layout'
 import { PermissionsProvider } from './hooks/usePermissions'
 import JokeTimeNotice from './pages/JokeTimeNotice'
@@ -68,15 +71,15 @@ function AppRoutes() {
               <Route path="/music" element={<Navigate to="/" />} />
               <Route path="/music/*" element={<Navigate to="/" />} />
               <Route path="/admin" element={<Navigate to="/settings" />} />
-              <Route path="/processes" element={<Navigate to="/system-tools" />} />
+              <Route path="/processes" element={<ProcessesPage />} />
               <Route path="/firewall" element={<Navigate to="/system-tools" />} />
               <Route path="/dns" element={<Navigate to="/devices" />} />
               <Route path="/proxy" element={<Navigate to="/devices" />} />
               <Route path="/videos" element={<Navigate to="/" />} />
               <Route path="/photos" element={<Navigate to="/" />} />
               <Route path="/podcasts" element={<Navigate to="/" />} />
-              <Route path="/bookmarks" element={<Navigate to="/" />} />
-              <Route path="/notes" element={<Navigate to="/" />} />
+              <Route path="/notes" element={<NotesPage />} />
+              <Route path="/bookmarks" element={<BookmarksPage />} />
               <Route path="/calendar" element={<Navigate to="/" />} />
               <Route path="/calculator" element={<Navigate to="/" />} />
               <Route path="/recent" element={<Navigate to="/" />} />
