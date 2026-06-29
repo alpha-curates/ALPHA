@@ -60,7 +60,10 @@ def check_permission(page, action='view'):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            perms = current_user.permissions or {}
+            try:
+                perms = current_user.permissions or {}
+            except Exception:
+                perms = {}
             pages = perms.get('pages', {})
             page_perms = pages.get(page, {})
             if not page_perms.get(action, False):
@@ -72,7 +75,10 @@ def check_permission(page, action='view'):
 def get_merged_permissions(user):
     if user.role == 'admin':
         return ADMIN_PERMISSIONS
-    stored = user.permissions or {}
+    try:
+        stored = user.permissions or {}
+    except Exception:
+        stored = {}
     merged = DEFAULT_PERMISSIONS.copy()
     for section in merged:
         if section in stored:

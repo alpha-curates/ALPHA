@@ -7,21 +7,32 @@ interface PermissionContext {
   loading: boolean
 }
 
+const DEFAULT_PERMS = {
+  pages: {} as Record<string, Record<string, boolean>>,
+  features: {} as Record<string, boolean>,
+  limits: { storageQuotaMb: 0, maxDevices: 0, maxShares: 50, maxNotifications: 200 }
+}
+
 const PermContext = createContext<PermissionContext>({
-  permissions: null,
+  permissions: DEFAULT_PERMS,
   can: () => true,
-  loading: true,
+  loading: false,
 })
 
 export function PermissionsProvider({ children }: { children: React.ReactNode }) {
-  const [permissions, setPermissions] = useState<any>(null)
+  const [permissions, setPermissions] = useState<any>(DEFAULT_PERMS)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) { setLoading(false); return }
     api.get('/permissions/me').then(r => {
       setPermissions(r.data)
       setLoading(false)
-    }).catch(() => setLoading(false))
+    }).catch(() => {
+      setPermissions(DEFAULT_PERMS)
+      setLoading(false)
+    })
   }, [])
 
   const can = (page: string, action: string = 'view'): boolean => {

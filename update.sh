@@ -21,6 +21,12 @@ cols = [row[1] for row in c.fetchall()]
 if 'conversation_id' not in cols:
     c.execute('ALTER TABLE chat_message ADD COLUMN conversation_id VARCHAR(64) REFERENCES conversation(id)')
     print('DB: added conversation_id')
+# Add permissions column to user if missing
+c.execute('PRAGMA table_info(user)')
+cols = [row[1] for row in c.fetchall()]
+if 'permissions' not in cols:
+    c.execute('ALTER TABLE user ADD COLUMN permissions JSON DEFAULT "{}"')
+    print('DB: added permissions to user')
 conn.commit()
 conn.close()
 "
