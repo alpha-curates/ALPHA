@@ -267,7 +267,7 @@ export default function Dashboard() {
   const [metricRange, setMetricRange] = useState('1h')
   const [alerts, setAlerts] = useState<NotificationType[]>([])
   const [processes, setProcesses] = useState<any[]>([])
-  const [services, setServices] = useState<any[]>([])
+  const [services] = useState<any[]>([])
   const [widgets, setWidgets] = useState<DashboardWidget[]>([])
   const [showGen, setShowGen] = useState(false)
   const [showCustomize, setShowCustomize] = useState(false)
@@ -315,7 +315,8 @@ export default function Dashboard() {
     const secondaryCalls: Promise<any>[] = []
     secondaryCalls.push(
       api.get('/notifications/').then(r => {
-        setAlerts(r.data?.slice?.(0, 8) || r.data || [])
+        const items = r.data?.notifications || r.data || []
+        setAlerts(Array.isArray(items) ? items.slice(0, 8) : [])
       }).catch(() => {})
     )
     secondaryCalls.push(
@@ -323,11 +324,7 @@ export default function Dashboard() {
         setProcesses((r.data?.processes || r.data || []).slice(0, 7))
       }).catch(() => {})
     )
-    secondaryCalls.push(
-      api.get('/system/services').then(r => {
-        setServices(r.data || [])
-      }).catch(() => {})
-    )
+    // services endpoint not available on backend yet — using fallback SERVICE_NAMES display
     await Promise.allSettled(secondaryCalls)
   }, [metricRange, addToast])
 
