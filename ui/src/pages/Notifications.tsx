@@ -1,11 +1,40 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import {
   Bell, Check, CheckCheck, Trash2, Info, AlertTriangle,
-  AlertCircle, Mail, Home, MessageSquare, X, PartyPopper, Gift, Megaphone
+  AlertCircle, Mail, Home, MessageSquare, X, Megaphone,
+  Loader, Send
 } from 'lucide-react'
 import api from '../utils/api'
 import { Notification } from '../types'
 import { useAuth } from '../hooks/useAuth'
+
+interface ToastData { id: string; message: string; type: 'success' | 'error' | 'info' | 'warning' }
+
+const toastStyle = (t: ToastData['type']) => ({
+  padding: '10px 14px', borderRadius: 10,
+  background: t === 'error' ? 'var(--danger-dim)' : t === 'success' ? 'var(--success-dim)' : t === 'warning' ? 'var(--warning-dim)' : 'var(--info-dim)',
+  color: t === 'error' ? 'var(--danger)' : t === 'success' ? 'var(--success)' : t === 'warning' ? 'var(--warning)' : 'var(--info)',
+  fontSize: 13, fontWeight: 500,
+  animation: 'smoothSlideUp 0.3s cubic-bezier(0.16,1,0.3,1) both',
+  boxShadow: 'var(--shadow-md)',
+  border: `1px solid ${t === 'error' ? 'var(--danger)' : t === 'success' ? 'var(--success)' : t === 'warning' ? 'var(--warning)' : 'var(--info)'}`,
+  display: 'flex', alignItems: 'center', gap: 8,
+})
+
+function ToastContainer({ toasts, onDismiss }: { toasts: ToastData[]; onDismiss: (id: string) => void }) {
+  if (!toasts.length) return null
+  return (
+    <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 400 }}>
+      {toasts.map(t => (
+        <div key={t.id} style={toastStyle(t.type)}>
+          {t.type === 'error' ? <AlertCircle size={14} /> : t.type === 'success' ? <Check size={14} /> : t.type === 'warning' ? <AlertTriangle size={14} /> : <Info size={14} />}
+          <span style={{ flex: 1 }}>{t.message}</span>
+          <button onClick={() => onDismiss(t.id)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 2, opacity: 0.6 }}><X size={12} /></button>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 const typeIcons: Record<string, React.ReactNode> = {
   info: <Info size={16} style={{ color: 'var(--info)' }} />,
@@ -30,39 +59,95 @@ export default function NotificationsPage() {
   const [popupType, setPopupType] = useState('celebration')
   const [popupTarget, setPopupTarget] = useState('all')
   const [allUsers, setAllUsers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
+  const [creatingPopup, setCreatingPopup] = useState(false)
+  const [error, setError] = useState('')
+  const [toasts, setToasts] = useState<ToastData[]>([])
 
-  useEffect(() => {
-    api.get('/notifications/').then(r => {
-      setNotifications(r.data.notifications)
-      setUnread(r.data.unread)
-    }).catch(() => {})
-    api.get('/users/').then(r => setAllUsers(r.data)).catch(() => {})
+  const addToast = useCallback((message: string, type: ToastData['type'] = 'info') => {
+    const id = crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    setToasts(prev => [...prev, { id, message, type }])
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4500)
   }, [])
 
+  const dismissToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id))
+  }, [])
+
+  useEffect(() => {
+    document.title = unread > 0 ? `(${unread}) Notifications - AlphaNAS` : 'Notifications - AlphaNAS'
+  }, [unread])
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const r = await api.get('/notifications/')
+      setNotifications(r.data.notifications)
+      setUnread(r.data.unread)
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'Failed to load notifications')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    load()
+    api.get('/users/').then(r => setAllUsers(r.data)).catch(() => {})
+  }, [load])
+
   const markRead = async (id: string) => {
-    await api.post(`/notifications/read/${id}`)
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
-    setUnread(prev => Math.max(0, prev - 1))
+    try {
+      await api.post(`/notifications/read/${id}`)
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+      setUnread(prev => Math.max(0, prev - 1))
+    } catch {
+      addToast('Failed to mark as read', 'error')
+    }
   }
 
   const markAllRead = async () => {
-    await api.post('/notifications/read-all')
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-    setUnread(0)
+    try {
+      await api.post('/notifications/read-all')
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+      setUnread(0)
+      addToast('All notifications marked as read', 'success')
+    } catch {
+      addToast('Failed to mark all as read', 'error')
+    }
+  }
+
+  const deleteNotification = async (id: string) => {
+    try {
+      await api.delete(`/notifications/${id}`)
+      const removed = notifications.find(n => n.id === id)
+      setNotifications(prev => prev.filter(n => n.id !== id))
+      if (removed && !removed.read) setUnread(prev => Math.max(0, prev - 1))
+      addToast('Notification deleted', 'success')
+    } catch {
+      addToast('Failed to delete notification', 'error')
+    }
   }
 
   const sendNotification = async () => {
     if (!sendTitle.trim() || !sendMsg.trim()) return
-    await api.post('/notifications/send', { title: sendTitle, message: sendMsg, type: sendType })
-    setSendTitle(''); setSendMsg(''); setShowSend(false)
-    const r = await api.get('/notifications/')
-    setNotifications(r.data.notifications)
-    setUnread(r.data.unread)
+    setSending(true)
+    try {
+      await api.post('/notifications/send', { title: sendTitle, message: sendMsg, type: sendType })
+      setSendTitle(''); setSendMsg(''); setShowSend(false)
+      addToast('Notification sent', 'success')
+      load()
+    } catch (err: any) {
+      addToast(err.response?.data?.error || 'Failed to send notification', 'error')
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 700 }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <h3 style={{ fontSize: 16, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Bell size={18} /> Notifications
@@ -73,7 +158,6 @@ export default function NotificationsPage() {
         <button className="btn btn-primary btn-sm" onClick={() => setShowSend(!showSend)}><Bell size={14} /> Send</button>
       </div>
 
-      {/* Send notification */}
       {showSend && (
         <div className="glass-card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <input placeholder="Title" value={sendTitle} onChange={e => setSendTitle(e.target.value)} style={{ height: 34, fontSize: 13 }} />
@@ -84,13 +168,14 @@ export default function NotificationsPage() {
               <option value="alert">Alert</option>
               <option value="message">Message</option>
             </select>
-            <button className="btn btn-primary btn-sm" onClick={sendNotification}>Send</button>
+            <button className="btn btn-primary btn-sm" onClick={sendNotification} disabled={sending}>
+              {sending ? <><Loader size={14} className="spin" /> Sending...</> : <><Send size={14} /> Send</>}
+            </button>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowSend(false)}>Cancel</button>
           </div>
         </div>
       )}
 
-      {/* Admin Popup Creator */}
       {user?.role === 'admin' && (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
@@ -120,12 +205,22 @@ export default function NotificationsPage() {
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn btn-primary btn-sm" onClick={async () => {
                   if (!popupTitle.trim() || !popupMsg.trim()) return
-                  await api.post('/popups/create', {
-                    title: popupTitle, message: popupMsg, type: popupType,
-                    target_user_id: popupTarget === 'all' ? null : popupTarget
-                  })
-                  setPopupTitle(''); setPopupMsg(''); setShowPopupCreator(false)
-                }}>Publish Popup</button>
+                  setCreatingPopup(true)
+                  try {
+                    await api.post('/popups/create', {
+                      title: popupTitle, message: popupMsg, type: popupType,
+                      target_user_id: popupTarget === 'all' ? null : popupTarget
+                    })
+                    setPopupTitle(''); setPopupMsg(''); setShowPopupCreator(false)
+                    addToast('Popup published', 'success')
+                  } catch (err: any) {
+                    addToast(err.response?.data?.error || 'Failed to create popup', 'error')
+                  } finally {
+                    setCreatingPopup(false)
+                  }
+                }} disabled={creatingPopup}>
+                  {creatingPopup ? <><Loader size={14} className="spin" /> Publishing...</> : 'Publish Popup'}
+                </button>
                 <button className="btn btn-ghost btn-sm" onClick={() => setShowPopupCreator(false)}>Cancel</button>
               </div>
               {popupTarget !== 'all' && (
@@ -136,9 +231,12 @@ export default function NotificationsPage() {
         </>
       )}
 
-      {/* List */}
-      {notifications.length === 0 ? (
-        <div className="empty-state"><Bell size={48} /><h3>No notifications</h3></div>
+      {loading ? (
+        <div className="empty-state"><Loader size={32} className="spin" /><h3>Loading notifications...</h3></div>
+      ) : error ? (
+        <div className="empty-state"><AlertCircle size={48} style={{ color: 'var(--danger)' }} /><h3 style={{ color: 'var(--danger)' }}>{error}</h3><p style={{ fontSize: 13 }}>Try refreshing the page</p></div>
+      ) : notifications.length === 0 ? (
+        <div className="empty-state"><Bell size={48} /><h3>No notifications yet</h3><p style={{ fontSize: 13 }}>Notifications from the system and other users will appear here</p></div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {notifications.map(n => (
@@ -158,10 +256,15 @@ export default function NotificationsPage() {
                   <Check size={14} />
                 </button>
               )}
+              <button className="btn btn-ghost btn-icon btn-sm" onClick={() => deleteNotification(n.id)} title="Delete" style={{ color: 'var(--danger)' }}>
+                <Trash2 size={14} />
+              </button>
             </div>
           ))}
         </div>
       )}
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   )
 }
