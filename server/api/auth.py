@@ -28,10 +28,13 @@ def register():
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
+    import traceback as _tb
     try:
-        data = request.json
-        user = User.query.filter_by(username=data['username']).first()
-        if not user or not check_password_hash(user.password_hash, data['password']):
+        data = request.get_json(force=True, silent=False)
+        username = data.get('username', '')
+        password = data.get('password', '')
+        user = User.query.filter_by(username=username).first()
+        if not user or not check_password_hash(user.password_hash, password):
             return jsonify({'error': 'Invalid credentials'}), 401
         login_user(user)
         token = jwt.encode({
@@ -43,9 +46,13 @@ def login():
             'user': {'id': user.id, 'username': user.username, 'role': user.role, 'email': user.email}
         })
     except Exception as e:
-        import traceback
-        tb = traceback.format_exc()
+        tb = _tb.format_exc()
         print("LOGIN CRASH:", tb, flush=True)
+        try:
+            with open('/tmp/alpha-crash.txt', 'w') as f:
+                f.write(tb)
+        except:
+            pass
         return jsonify({'error': str(e), 'traceback': tb}), 500
 
 @auth_bp.route('/logout', methods=['POST'])
