@@ -110,6 +110,20 @@
     footer .social a:hover{color:var(--text)}
     footer p{color:var(--text-muted);font-size:13px}
 
+    /* Scrollbar */
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+    ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2)}
+    *{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.1) transparent}
+
+    /* Code block copy */
+    .code-wrap{position:relative}
+    .copy-btn{position:absolute;top:8px;right:8px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;background:rgba(255,255,255,0.08);color:var(--text-secondary);border:1px solid rgba(255,255,255,0.06);cursor:pointer;opacity:0;transition:all .2s;font-family:inherit}
+    .code-wrap:hover .copy-btn{opacity:1}
+    .copy-btn:hover{background:rgba(108,92,231,0.2);color:var(--accent-hover)}
+    .copy-btn.copied{background:rgba(0,184,148,0.2);color:var(--success);opacity:1}
+
     /* Animations */
     .fade-up{opacity:0;transform:translateY(30px);transition:all .6s cubic-bezier(.25,.46,.45,.94)}
     .fade-up.visible{opacity:1;transform:translateY(0)}
@@ -250,19 +264,19 @@
           <div class="i-num">1</div>
           <h3>Run the installer</h3>
           <p>One command installs the entire server on your Raspberry Pi.</p>
-          <div class="code-block">curl -sL https://raw.githubusercontent.com/vector-just-technology/Home-server/Stable/install.sh | bash</div>
+          <div class="code-wrap"><div class="code-block">curl -sL https://raw.githubusercontent.com/vector-just-technology/Home-server/Stable/install.sh | bash</div><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
         </div>
         <div class="i-card fade-up">
           <div class="i-num">2</div>
           <h3>Open the dashboard</h3>
           <p>Access your server from any browser on your network.</p>
-          <div class="code-block">open http://&lt;pi-ip&gt;:5000</div>
+          <div class="code-wrap"><div class="code-block">open http://&lt;pi-ip&gt;:5000</div><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
         </div>
         <div class="i-card fade-up">
           <div class="i-num">3</div>
           <h3>Create your account</h3>
           <p>First user becomes the administrator. Invite others with granular permissions.</p>
-          <div class="code-block" style="color:var(--text)">Click "Create one" → Done!</div>
+          <div class="code-wrap"><div class="code-block">Click "Create one" → Done!</div><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
         </div>
       </div>
     </section>
@@ -288,6 +302,15 @@
     document.querySelectorAll('.nav-links a').forEach(a => {
       a.addEventListener('click', () => document.querySelector('.nav-links').classList.remove('open'))
     })
+
+    // Copy code
+    function copyCode(btn) {
+      const code = btn.parentElement.querySelector('.code-block')
+      navigator.clipboard.writeText(code.textContent.trim())
+      btn.textContent = 'Copied!'
+      btn.classList.add('copied')
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied') }, 2000)
+    }
   </script>
 </body>
 </html>
