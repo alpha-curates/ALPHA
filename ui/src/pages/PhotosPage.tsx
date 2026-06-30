@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react'
 import {
   Image, Search, Loader, AlertCircle, Check, Info, X,
   Grid3X3, List, Trash2, FolderOpen, ChevronRight, Home
-, AlertTriangle} from 'lucide-react'
+, AlertTriangle
+} from 'lucide-react'
 import api from '../utils/api'
 
 interface Photo {
