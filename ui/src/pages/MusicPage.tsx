@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react'
 import {
   Music, Play, Pause, SkipForward, SkipBack, Volume2,
   Search, Loader, AlertCircle, Check, Info, X, List, Disc3
-, AlertTriangle} from 'lucide-react'
+, AlertTriangle
+} from 'lucide-react'
 import api from '../utils/api'
 
 interface Song {
