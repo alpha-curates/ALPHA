@@ -10,7 +10,7 @@
   <a href="https://github.com/vector-just-technology">
     <img src="https://img.shields.io/badge/My-Profile-purple" alt="GitHub Repo">
   </a>
-  <a href="https://vector-just-technology.github.io/Home-server/#install">
+  <a href="https://vector-just-technology.github.io/Home-server/#">
     <img src="https://img.shields.io/badge/Git-Site-yellow" alt="GitHub Repo">
   </a>
 </p>
