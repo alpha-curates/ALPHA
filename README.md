@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/React-JS-blue" alt="ReactJS">
   <img src="https://img.shields.io/badge/Open-Source-green" alt="Open Source">
   <img src="https://img.shields.io/badge/Licence-MIT-orange" alt="Licence">
-  <img alt="GitHub Tag" src="https://img.shields.io/github/v/tag/vector-just-technology/Home-Server">
+  <img alt="GitHub Tag" src="https://img.shields.io/github/v/tag/vector-just-technology/VisionHUB">
   <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/vector-just-technology/VisionHUB">
 
   
