@@ -335,12 +335,6 @@ export const VIRTUAL_PROVIDERS: VirtualProviderDef[] = [
     default_model: 'big-pickle',
     models: OPENCODE_MODELS,
   },
-  {
-    id: '__keylessai__', name: 'KeylessAI (free)', type: 'openai',
-    api_url: 'https://keylessai.thryx.workers.dev/v1', api_key: 'not-needed',
-    default_model: 'openai-fast',
-    models: KEYLESSAI_MODELS,
-  },
 ]
 
 export const PROVIDER_TYPES: string[] = [
