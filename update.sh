@@ -25,7 +25,7 @@ if 'conversation_id' not in cols:
 c.execute('PRAGMA table_info(user)')
 cols = [row[1] for row in c.fetchall()]
 if 'permissions' not in cols:
-    c.execute("ALTER TABLE user ADD COLUMN permissions TEXT DEFAULT '{}'")
+    c.execute('ALTER TABLE user ADD COLUMN permissions TEXT DEFAULT \'{}\'')
     print('DB: added permissions to user')
 conn.commit()
 conn.close()
