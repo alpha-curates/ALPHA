@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react'
 import {
   ClipboardList, Search, X, Loader, AlertCircle, Check,
   Info, RefreshCw, Clock, User, Globe, Activity, Shield
-, AlertTriangle} from 'lucide-react'
+, AlertTriangle
+} from 'lucide-react'
 import api from '../utils/api'
 
 interface AuditEntry {
