@@ -24,6 +24,20 @@ import FavoritesPage from './pages/FavoritesPage'
 import FileManagerPage from './pages/FileManagerPage'
 import NetworkPage from './pages/NetworkPage'
 import AdminPage from './pages/AdminPage'
+import ProcessesPage from './pages/ProcessesPage'
+import FirewallPage from './pages/FirewallPage'
+import DNSPage from './pages/DNSPage'
+import ProxyPage from './pages/ProxyPage'
+import MusicPage from './pages/MusicPage'
+import VideosPage from './pages/VideosPage'
+import PhotosPage from './pages/PhotosPage'
+import PodcastsPage from './pages/PodcastsPage'
+import BookmarksPage from './pages/BookmarksPage'
+import NotesPage from './pages/NotesPage'
+import CalendarPage from './pages/CalendarPage'
+import CalculatorPage from './pages/CalculatorPage'
+import AuditPage from './pages/AuditPage'
+import EncryptionPage from './pages/EncryptionPage'
 import PagePlaceholder from './pages/PagePlaceholder'
 import Layout from './components/layout/Layout'
 import { PermissionsProvider } from './hooks/usePermissions'
@@ -71,28 +85,28 @@ function AppRoutes() {
               <Route path="/system-tools" element={<SystemToolsPage />} />
               <Route path="/downloads" element={<DownloadsPage />} />
               <Route path="/profile" element={<Navigate to="/settings" />} />
-              <Route path="/processes" element={<PagePlaceholder />} />
-              <Route path="/firewall" element={<PagePlaceholder />} />
-              <Route path="/dns" element={<PagePlaceholder />} />
-              <Route path="/proxy" element={<PagePlaceholder />} />
-              <Route path="/music" element={<PagePlaceholder />} />
+              <Route path="/processes" element={<ProcessesPage />} />
+              <Route path="/firewall" element={<FirewallPage />} />
+              <Route path="/dns" element={<DNSPage />} />
+              <Route path="/proxy" element={<ProxyPage />} />
+              <Route path="/music" element={<MusicPage />} />
               <Route path="/music/*" element={<PagePlaceholder />} />
-              <Route path="/videos" element={<PagePlaceholder />} />
-              <Route path="/photos" element={<PagePlaceholder />} />
-              <Route path="/podcasts" element={<PagePlaceholder />} />
-              <Route path="/bookmarks" element={<PagePlaceholder />} />
-              <Route path="/notes" element={<PagePlaceholder />} />
-              <Route path="/calendar" element={<PagePlaceholder />} />
-              <Route path="/calculator" element={<PagePlaceholder />} />
+              <Route path="/videos" element={<VideosPage />} />
+              <Route path="/photos" element={<PhotosPage />} />
+              <Route path="/podcasts" element={<PodcastsPage />} />
+              <Route path="/bookmarks" element={<BookmarksPage />} />
+              <Route path="/notes" element={<NotesPage />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/calculator" element={<CalculatorPage />} />
               <Route path="/recent" element={<RecentPage />} />
               <Route path="/favorites" element={<FavoritesPage />} />
               <Route path="/files" element={<FileManagerPage />} />
               <Route path="/network" element={<NetworkPage />} />
               <Route path="/network/*" element={<PagePlaceholder />} />
               <Route path="/permissions" element={<PermissionsPage />} />
-              <Route path="/audit" element={<PagePlaceholder />} />
+              <Route path="/audit" element={<AuditPage />} />
               <Route path="/backup" element={<BackupPage />} />
-              <Route path="/encryption" element={<PagePlaceholder />} />
+              <Route path="/encryption" element={<EncryptionPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="*" element={<Dashboard />} />
             </Routes>
