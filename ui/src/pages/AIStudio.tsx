@@ -101,6 +101,7 @@ export default function AIStudio() {
   const [systemPrompt, setSystemPrompt] = useState('')
   const [activeAgent, setActiveAgent] = useState('general')
   const chatContainerRef = useRef<HTMLDivElement>(null)
+  const [backendAvail, setBackendAvail] = useState(true)
 
   const [activeTool, setActiveTool] = useState<string | null>(null)
   const [showProviders, setShowProviders] = useState(false)
@@ -108,20 +109,43 @@ export default function AIStudio() {
   const [showAgentMenu, setShowAgentMenu] = useState(false)
   const [showCmdToolbar, setShowCmdToolbar] = useState(false)
 
+  const lsConvKey = 'visionhub_conversations'
+
+  const saveConvsToLS = (convs: any[]) => {
+    try { localStorage.setItem(lsConvKey, JSON.stringify(convs)) } catch {}
+  }
+
   const loadConversations = useCallback(async () => {
     try {
       const r = await api.get('/ai/conversations')
       setConversations(r.data)
-    } catch {}
+      saveConvsToLS(r.data)
+      setBackendAvail(true)
+    } catch {
+      try {
+        const stored = localStorage.getItem(lsConvKey)
+        if (stored) setConversations(JSON.parse(stored))
+      } catch {}
+    }
   }, [])
 
   const loadMessages = useCallback(async (convId?: string) => {
+    if (convId) {
+      try {
+        const stored = localStorage.getItem(`visionhub_msgs_${convId}`)
+        if (stored) { setMessages(JSON.parse(stored)); return }
+      } catch {}
+    }
     try {
       const params = convId ? `?conversation_id=${convId}` : ''
       const r = await api.get(`/ai/history${params}`)
       setMessages(r.data)
-    } catch {}
+    } catch { setMessages([]) }
   }, [])
+
+  const saveMessagesToLS = (convId: string, msgs: any[]) => {
+    try { localStorage.setItem(`visionhub_msgs_${convId}`, JSON.stringify(msgs)) } catch {}
+  }
 
   const switchConversation = async (conv: any) => {
     abortRef.current?.abort()
@@ -137,37 +161,62 @@ export default function AIStudio() {
 
   const newConversation = async () => {
     abortRef.current?.abort()
-    const r = await api.post('/ai/conversations', { title: 'New Chat' })
-    const conv = r.data
-    setActiveConv({ id: conv.id, title: conv.title, system_prompt: '', message_count: 0 })
+    const id = 'conv-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6)
+    const conv = { id, title: 'New Chat', system_prompt: '', message_count: 0, created_at: new Date().toISOString() }
+    setActiveConv(conv)
     setMessages([])
     setSystemPrompt('')
     setStreamingText('')
     setActiveAgent('general')
+    try {
+      const r = await api.post('/ai/conversations', { title: 'New Chat' })
+      conv.id = r.data.id; conv.title = r.data.title
+    } catch {
+      setConversations(prev => {
+        const next = [conv, ...prev]
+        saveConvsToLS(next)
+        return next
+      })
+    }
     loadConversations()
   }
 
   const deleteConversation = async (id: string) => {
     if (!confirm('Delete this conversation and all messages?')) return
-    await api.delete(`/ai/conversations/${id}`)
+    try {
+      await api.delete(`/ai/conversations/${id}`)
+    } catch {}
+    try { localStorage.removeItem(`visionhub_msgs_${id}`) } catch {}
+    setConversations(prev => {
+      const next = prev.filter(c => c.id !== id)
+      saveConvsToLS(next)
+      return next
+    })
     if (activeConv?.id === id) {
       setActiveConv(null)
       setMessages([])
     }
-    loadConversations()
   }
 
   const renameConversation = async (id: string, title: string) => {
-    await api.put(`/ai/conversations/${id}`, { title })
+    try {
+      await api.put(`/ai/conversations/${id}`, { title })
+    } catch {}
     setEditingConvId(null)
-    loadConversations()
+    setConversations(prev => {
+      const next = prev.map(c => c.id === id ? { ...c, title } : c)
+      saveConvsToLS(next)
+      return next
+    })
     if (activeConv?.id === id) setActiveConv({ ...activeConv, title })
   }
 
   const updateSystemPrompt = async (prompt?: string) => {
     if (!activeConv) return
     const sp = prompt !== undefined ? prompt : systemPrompt
-    await api.put(`/ai/conversations/${activeConv.id}`, { system_prompt: sp })
+    try {
+      await api.put(`/ai/conversations/${activeConv.id}`, { system_prompt: sp })
+    } catch {}
     setShowSystemPrompt(false)
   }
 
@@ -177,7 +226,7 @@ export default function AIStudio() {
     setActiveAgent(agentId)
     setSystemPrompt(agent.prompt)
     if (activeConv) {
-      api.put(`/ai/conversations/${activeConv.id}`, { system_prompt: agent.prompt })
+      try { api.put(`/ai/conversations/${activeConv.id}`, { system_prompt: agent.prompt }) } catch {}
     }
     setShowAgentMenu(false)
   }
@@ -204,6 +253,54 @@ export default function AIStudio() {
     setShowProviderDropdown(false)
   }
 
+  const callProviderDirect = async (msgText: string, provider: any, model: string, signal: AbortSignal) => {
+    const apiUrl = provider?.api_url
+    const apiKey = provider?.api_key
+    if (!apiUrl) throw new Error('No API URL configured for this provider')
+
+    const isOpenAICompat = provider?.type === 'openai'
+    const body = isOpenAICompat ? {
+      model: model || provider?.default_model || 'big-pickle',
+      messages: [
+        ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+        ...messages.filter(m => m.role !== 'system').map(m => ({ role: m.role, content: m.content })),
+        { role: 'user', content: msgText }
+      ],
+      stream: true, max_tokens: 4096
+    } : { message: msgText, model, stream: true }
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (apiKey && apiKey !== 'not-needed') headers['Authorization'] = `Bearer ${apiKey}`
+
+    const res = await fetch(apiUrl + '/chat/completions', {
+      method: 'POST', headers, body: JSON.stringify(body), signal
+    })
+    if (!res.ok) throw new Error(`API error: ${res.status}`)
+    const reader = res.body?.getReader()
+    if (!reader) throw new Error('No reader')
+
+    let fullText = ''
+    const decoder = new TextDecoder()
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      const chunk = decoder.decode(value)
+      const lines = chunk.split('\n')
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const dataStr = line.slice(6).trim()
+          if (dataStr === '[DONE]') break
+          try {
+            const data = JSON.parse(dataStr)
+            const token = data.choices?.[0]?.delta?.content || data.choices?.[0]?.text || ''
+            if (token) { fullText += token; setStreamingText(fullText) }
+          } catch {}
+        }
+      }
+    }
+    return fullText
+  }
+
   const sendMessage = async (text?: string) => {
     const msgText = text || input
     if (!msgText.trim() || loading) return
@@ -211,10 +308,19 @@ export default function AIStudio() {
     abortRef.current = new AbortController()
 
     if (!activeConv) {
-      const r = await api.post('/ai/conversations', { title: msgText.trim().slice(0, 50), system_prompt: systemPrompt })
-      const conv = { id: r.data.id, title: r.data.title, system_prompt: systemPrompt, message_count: 0 }
+      const id = 'conv-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6)
+      const conv = { id, title: msgText.trim().slice(0, 50), system_prompt: systemPrompt, message_count: 0, created_at: new Date().toISOString() }
       setActiveConv(conv)
-      loadConversations()
+      try {
+        const r = await api.post('/ai/conversations', { title: msgText.trim().slice(0, 50), system_prompt: systemPrompt })
+        conv.id = r.data.id; conv.title = r.data.title
+      } catch {
+        setConversations(prev => {
+          const next = [conv, ...prev]
+          saveConvsToLS(next)
+          return next
+        })
+      }
     }
 
     setLoading(true)
@@ -225,63 +331,79 @@ export default function AIStudio() {
     setMessages(prev => [...prev, userMsg])
     setInput(''); setStreamingText('')
     const convId = activeConv?.id || ''
+    let fullText = ''
 
     try {
-      const res = await fetch('/api/ai/chat/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify({
-          message: msgText, model: activeModel,
-          provider_id: activeProvider?.id,
-          provider_type: activeProvider?.type,
-          provider_api_url: activeProvider?.api_url,
-          provider_api_key: activeProvider?.api_key,
-          conversation_id: convId
-        }),
-        signal: abortRef.current.signal
-      })
+      if (backendAvail) {
+        const res = await fetch('/api/ai/chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+          body: JSON.stringify({
+            message: msgText, model: activeModel,
+            provider_id: activeProvider?.id,
+            provider_type: activeProvider?.type,
+            provider_api_url: activeProvider?.api_url,
+            provider_api_key: activeProvider?.api_key,
+            conversation_id: convId
+          }),
+          signal: abortRef.current.signal
+        })
 
-      if (!res.ok) throw new Error('Stream failed')
-      const reader = res.body?.getReader()
-      if (!reader) throw new Error('No reader')
+        if (!res.ok) throw new Error('Backend stream failed')
+        const reader = res.body?.getReader()
+        if (!reader) throw new Error('No reader')
 
-      let fullText = ''
-      const decoder = new TextDecoder()
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6))
-              if (data.token) {
-                fullText += data.token
-                setStreamingText(fullText)
-              }
-              if (data.done) {
-                setMessages(prev => [...prev, {
-                  id: data.id || 'resp-' + Date.now(), role: 'assistant',
-                  content: fullText, model: activeModel || data.provider,
-                  created_at: new Date().toISOString()
-                }])
-                setStreamingText('')
-                loadConversations()
-              }
-              if (data.error) throw new Error(data.error)
-            } catch {}
+        const decoder = new TextDecoder()
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const chunk = decoder.decode(value)
+          const lines = chunk.split('\n')
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                if (data.token) { fullText += data.token; setStreamingText(fullText) }
+                if (data.done) break
+                if (data.error) throw new Error(data.error)
+              } catch {}
+            }
           }
         }
+      } else {
+        if (activeProvider?.api_url) {
+          fullText = await callProviderDirect(msgText, activeProvider, activeModel, abortRef.current.signal)
+        } else {
+          throw new Error('No provider configured. Add an API key in Provider settings.')
+        }
+      }
+
+      if (fullText) {
+        const respMsg: ChatMsg = {
+          id: 'resp-' + Date.now(), role: 'assistant',
+          content: fullText, model: activeModel,
+          created_at: new Date().toISOString()
+        }
+        setMessages(prev => {
+          const next = [...prev, respMsg]
+          if (convId) saveMessagesToLS(convId, next)
+          return next
+        })
+        setStreamingText('')
+        loadConversations()
       }
     } catch (e: any) {
       if (e.name !== 'AbortError') {
-        setMessages(prev => [...prev, {
-          id: 'err-' + Date.now(), role: 'assistant',
-          content: 'AI unavailable: ' + (e.message || 'Connection error'),
-          model: activeModel, created_at: new Date().toISOString()
-        }])
+        const errMsg = e.message || 'Connection error'
+        setMessages(prev => {
+          const next = [...prev, {
+            id: 'err-' + Date.now(), role: 'assistant',
+            content: errMsg,
+            model: activeModel, created_at: new Date().toISOString()
+          }]
+          if (convId) saveMessagesToLS(convId, next)
+          return next
+        })
       }
       setStreamingText('')
     }
@@ -296,6 +418,7 @@ export default function AIStudio() {
         api.get('/ai/history'),
         api.get('/ai/models')
       ])
+      setBackendAvail(true)
       let provs = provRes.data || []
       const ollamaOnline = statusRes.data?.ollama === true
       if (provs.length === 0) {
@@ -309,19 +432,26 @@ export default function AIStudio() {
         for (const vp of VIRTUAL_PROVIDERS) {
           provs.push({ ...vp })
         }
-        if (!activeProvider && provs.length > 0) {
-          setActiveProvider(provs[0])
-          setActiveModel(provs[0].default_model || provs[0].models[0])
-        }
       }
       setProviders(provs)
-      if (ollamaOnline && provs.length > 0 && !activeProvider) {
-        const p = provs[0]
-        setActiveProvider(p)
-        setActiveModel(p.default_model || (p.models?.[0]) || 'llama3.2:1b')
+      if (!activeProvider && provs.length > 0) {
+        setActiveProvider(provs[0])
+        setActiveModel(provs[0].default_model || provs[0].models[0])
       }
-      setMessages(histRes.data)
-    } catch {}
+      if (histRes.data?.length) setMessages(histRes.data)
+    } catch {
+      setBackendAvail(false)
+      const provs = VIRTUAL_PROVIDERS.map(vp => ({ ...vp }))
+      try {
+        const custom = JSON.parse(localStorage.getItem('visionhub_custom_providers') || '[]')
+        if (custom.length) provs.push(...custom)
+      } catch {}
+      setProviders(provs)
+      if (!activeProvider && provs.length > 0) {
+        setActiveProvider(provs[0])
+        setActiveModel(provs[0].default_model || provs[0].models[0])
+      }
+    }
   }, [])
 
   useEffect(() => { loadStatusAndProviders() }, [loadStatusAndProviders])
@@ -800,25 +930,41 @@ function ProvidersTabContent({ providers, onUpdate }: { providers: any[]; onUpda
   const [testResult, setTestResult] = useState('')
 
   const addProvider = async () => {
+    const p = {
+      id: 'custom-' + Date.now(), name: name || type, type,
+      api_url: apiUrl, api_key: apiKey, default_model: model || 'gpt-4o-mini',
+      models: [], enabled: true, has_key: !!apiKey
+    }
     try {
       await api.post('/ai/providers', { type, name: name || type, api_key: apiKey, api_url: apiUrl, default_model: model, enabled: true, force: true })
-      setShowAdd(false); setName(''); setApiKey(''); setApiUrl(''); setModel('')
-      onUpdate()
     } catch {
-      await api.post('/ai/providers', { type, name: name || type, api_key: apiKey, api_url: apiUrl, default_model: model, enabled: true, force: true })
-      setShowAdd(false); onUpdate()
+      try { localStorage.setItem('visionhub_custom_providers', JSON.stringify([...(JSON.parse(localStorage.getItem('visionhub_custom_providers') || '[]')), p])) } catch {}
     }
+    setShowAdd(false); setName(''); setApiKey(''); setApiUrl(''); setModel('')
+    onUpdate()
   }
 
   const testProvider = async () => {
     setTestResult('Testing...')
+    const url = apiUrl || (type === 'openai' ? 'https://api.openai.com' : '')
+    if (!url) { setTestResult('No API URL'); return }
     try {
-      const r = await api.post('/ai/providers/test', { type, api_key: apiKey, api_url: apiUrl, default_model: model })
-      setTestResult(r.data.success ? 'Connected!' : `Failed: ${r.data.response || r.data.error}`)
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`
+      const res = await fetch(url + '/models', { headers })
+      setTestResult(res.ok ? 'Connected!' : `Failed: HTTP ${res.status}`)
     } catch (e: any) { setTestResult(`Error: ${e.message}`) }
   }
 
-  const removeProvider = async (id: string) => { await api.delete(`/ai/providers/${id}`); onUpdate() }
+  const removeProvider = async (id: string) => {
+    try { await api.delete(`/ai/providers/${id}`) } catch {
+      try {
+        const stored = JSON.parse(localStorage.getItem('visionhub_custom_providers') || '[]')
+        localStorage.setItem('visionhub_custom_providers', JSON.stringify(stored.filter((p: any) => p.id !== id)))
+      } catch {}
+    }
+    onUpdate()
+  }
 
   const providerDefaults: Record<string, { url: string; models: string[]; default_model?: string }> = {
     openai: { url: 'https://api.openai.com', models: OPENAI_MODELS, default_model: 'gpt-4o' },
