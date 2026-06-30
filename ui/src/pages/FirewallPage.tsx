@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react'
 import {
   Shield, ShieldOff, Plus, X, Trash2, Loader, AlertCircle,
   Check, Info, RefreshCw, Globe, Server, Wifi
-, AlertTriangle} from 'lucide-react'
+, AlertTriangle
+} from 'lucide-react'
 import api from '../utils/api'
 
 interface FirewallRule {
