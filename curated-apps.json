@@ -1,0 +1,1969 @@
+[
+  {
+    "id": "sys-monitor",
+    "name": "sys-monitor",
+    "display_name": "System Monitor",
+    "icon": "cpu",
+    "description": "Real-time CPU, memory, disk, and network monitoring",
+    "category": "System Tools",
+    "launch_type": "route",
+    "url": "/",
+    "featured": true,
+    "tags": [
+      "system",
+      "monitoring",
+      "performance"
+    ]
+  },
+  {
+    "id": "file-manager",
+    "name": "file-manager",
+    "display_name": "File Manager",
+    "icon": "folder",
+    "description": "Full file browser with upload, download, rename, delete",
+    "category": "System Tools",
+    "launch_type": "route",
+    "url": "/storage",
+    "featured": true,
+    "tags": [
+      "files",
+      "storage",
+      "browser"
+    ]
+  },
+  {
+    "id": "task-manager",
+    "name": "task-manager",
+    "display_name": "Task Manager",
+    "icon": "activity",
+    "description": "View and manage running processes",
+    "category": "System Tools",
+    "launch_type": "route",
+    "url": "/system-tools",
+    "tags": [
+      "processes",
+      "tasks"
+    ]
+  },
+  {
+    "id": "disk-analyzer",
+    "name": "disk-analyzer",
+    "display_name": "Disk Analyzer",
+    "icon": "hard-drive",
+    "description": "Visualize disk usage with interactive charts",
+    "category": "System Tools",
+    "launch_type": "route",
+    "url": "/storage",
+    "tags": [
+      "disk",
+      "storage",
+      "analysis"
+    ]
+  },
+  {
+    "id": "log-viewer",
+    "name": "log-viewer",
+    "display_name": "Log Viewer",
+    "icon": "file-text",
+    "description": "Browse and search system logs",
+    "category": "System Tools",
+    "launch_type": "route",
+    "url": "/system-tools",
+    "tags": [
+      "logs",
+      "debug"
+    ]
+  },
+  {
+    "id": "backup-manager",
+    "name": "backup-manager",
+    "display_name": "Backup Manager",
+    "icon": "database",
+    "description": "Create and restore system backups",
+    "category": "System Tools",
+    "launch_type": "route",
+    "url": "/settings",
+    "tags": [
+      "backup",
+      "restore"
+    ]
+  },
+  {
+    "id": "update-manager",
+    "name": "update-manager",
+    "display_name": "Update Manager",
+    "icon": "download",
+    "description": "Check for and install system updates",
+    "category": "System Tools",
+    "launch_type": "route",
+    "url": "/settings",
+    "tags": [
+      "update",
+      "system"
+    ]
+  },
+  {
+    "id": "device-manager",
+    "name": "device-manager",
+    "display_name": "Device Manager",
+    "icon": "monitor",
+    "description": "Manage connected devices and peripherals",
+    "category": "System Tools",
+    "launch_type": "route",
+    "url": "/devices",
+    "tags": [
+      "devices",
+      "hardware"
+    ]
+  },
+  {
+    "id": "notification-center",
+    "name": "notification-center",
+    "display_name": "Notification Center",
+    "icon": "bell",
+    "description": "View and manage all system notifications",
+    "category": "System Tools",
+    "launch_type": "route",
+    "url": "/notifications",
+    "tags": [
+      "notifications",
+      "alerts"
+    ]
+  },
+  {
+    "id": "extension-manager",
+    "name": "extension-manager",
+    "display_name": "Extension Manager",
+    "icon": "grid",
+    "description": "Install and manage system extensions",
+    "category": "System Tools",
+    "launch_type": "route",
+    "url": "/extensions",
+    "tags": [
+      "extensions",
+      "plugins"
+    ]
+  },
+  {
+    "id": "terminal",
+    "name": "terminal",
+    "display_name": "Web Terminal",
+    "icon": "terminal",
+    "description": "Full in-browser terminal with command history",
+    "category": "Developer",
+    "launch_type": "route",
+    "url": "/tools",
+    "featured": true,
+    "tags": [
+      "terminal",
+      "cli",
+      "shell"
+    ]
+  },
+  {
+    "id": "code-editor",
+    "name": "code-editor",
+    "display_name": "Code Editor",
+    "icon": "code",
+    "description": "Edit code files with syntax highlighting",
+    "category": "Developer",
+    "launch_type": "iframe",
+    "url": "https://vscode.dev",
+    "featured": true,
+    "tags": [
+      "editor",
+      "code",
+      "programming"
+    ]
+  },
+  {
+    "id": "json-formatter",
+    "name": "json-formatter",
+    "display_name": "JSON Formatter",
+    "icon": "file-text",
+    "description": "Format, validate, and beautify JSON",
+    "category": "Developer",
+    "launch_type": "iframe",
+    "url": "https://jsonformatter.org",
+    "tags": [
+      "json",
+      "formatter"
+    ]
+  },
+  {
+    "id": "regex-tester",
+    "name": "regex-tester",
+    "display_name": "Regex Tester",
+    "icon": "code",
+    "description": "Test regular expressions in real-time",
+    "category": "Developer",
+    "launch_type": "iframe",
+    "url": "https://regex101.com",
+    "tags": [
+      "regex",
+      "testing"
+    ]
+  },
+  {
+    "id": "sql-editor",
+    "name": "sql-editor",
+    "display_name": "SQL Editor",
+    "icon": "database",
+    "description": "Write and execute SQL queries",
+    "category": "Developer",
+    "launch_type": "iframe",
+    "url": "https://sqliteonline.com",
+    "tags": [
+      "sql",
+      "database",
+      "query"
+    ]
+  },
+  {
+    "id": "git-explorer",
+    "name": "git-explorer",
+    "display_name": "Git Explorer",
+    "icon": "git-branch",
+    "description": "Browse git repositories and commits",
+    "category": "Developer",
+    "launch_type": "route",
+    "url": "/tools",
+    "tags": [
+      "git",
+      "version-control"
+    ]
+  },
+  {
+    "id": "api-tester",
+    "name": "api-tester",
+    "display_name": "API Tester",
+    "icon": "external-link",
+    "description": "Test REST APIs with custom requests",
+    "category": "Developer",
+    "launch_type": "iframe",
+    "url": "https://hoppscotch.io",
+    "tags": [
+      "api",
+      "rest",
+      "testing"
+    ]
+  },
+  {
+    "id": "html-preview",
+    "name": "html-preview",
+    "display_name": "HTML Preview",
+    "icon": "eye",
+    "description": "Live preview HTML/CSS/JavaScript",
+    "category": "Developer",
+    "launch_type": "iframe",
+    "url": "https://codepen.io/pen/",
+    "tags": [
+      "html",
+      "css",
+      "js",
+      "preview"
+    ]
+  },
+  {
+    "id": "diff-checker",
+    "name": "diff-checker",
+    "display_name": "Diff Checker",
+    "icon": "file-text",
+    "description": "Compare text and code differences",
+    "category": "Developer",
+    "launch_type": "iframe",
+    "url": "https://www.diffchecker.com",
+    "tags": [
+      "diff",
+      "compare",
+      "text"
+    ]
+  },
+  {
+    "id": "yaml-validator",
+    "name": "yaml-validator",
+    "display_name": "YAML Validator",
+    "icon": "file-text",
+    "description": "Validate and format YAML files",
+    "category": "Developer",
+    "launch_type": "iframe",
+    "url": "https://www.yamllint.com",
+    "tags": [
+      "yaml",
+      "validator"
+    ]
+  },
+  {
+    "id": "media-player",
+    "name": "media-player",
+    "display_name": "Media Player",
+    "icon": "music",
+    "description": "Play audio and video files",
+    "category": "Media",
+    "launch_type": "route",
+    "url": "/storage",
+    "featured": true,
+    "tags": [
+      "media",
+      "player",
+      "audio",
+      "video"
+    ]
+  },
+  {
+    "id": "music-player",
+    "name": "music-player",
+    "display_name": "Music Player",
+    "icon": "headphones",
+    "description": "Full-featured music player with playlists",
+    "category": "Media",
+    "launch_type": "iframe",
+    "url": "https://music.youtube.com",
+    "featured": true,
+    "tags": [
+      "music",
+      "audio",
+      "player"
+    ]
+  },
+  {
+    "id": "podcast-player",
+    "name": "podcast-player",
+    "display_name": "Podcast Player",
+    "icon": "radio",
+    "description": "Subscribe and listen to podcasts",
+    "category": "Media",
+    "launch_type": "iframe",
+    "url": "https://podcasts.google.com",
+    "tags": [
+      "podcast",
+      "audio"
+    ]
+  },
+  {
+    "id": "internet-radio",
+    "name": "internet-radio",
+    "display_name": "Internet Radio",
+    "icon": "radio",
+    "description": "Stream thousands of internet radio stations",
+    "category": "Media",
+    "launch_type": "iframe",
+    "url": "https://radio.garden",
+    "tags": [
+      "radio",
+      "streaming"
+    ]
+  },
+  {
+    "id": "video-player",
+    "name": "video-player",
+    "display_name": "Video Player",
+    "icon": "video",
+    "description": "Play video files with subtitle support",
+    "category": "Media",
+    "launch_type": "iframe",
+    "url": "https://www.youtube.com",
+    "tags": [
+      "video",
+      "player"
+    ]
+  },
+  {
+    "id": "photo-gallery",
+    "name": "photo-gallery",
+    "display_name": "Photo Gallery",
+    "icon": "image",
+    "description": "Browse and organize photos",
+    "category": "Media",
+    "launch_type": "route",
+    "url": "/storage",
+    "tags": [
+      "photos",
+      "gallery",
+      "images"
+    ]
+  },
+  {
+    "id": "audio-recorder",
+    "name": "audio-recorder",
+    "display_name": "Audio Recorder",
+    "icon": "mic",
+    "description": "Record audio from your microphone",
+    "category": "Media",
+    "launch_type": "iframe",
+    "url": "https://online-voice-recorder.com",
+    "tags": [
+      "audio",
+      "recorder",
+      "mic"
+    ]
+  },
+  {
+    "id": "screen-recorder",
+    "name": "screen-recorder",
+    "display_name": "Screen Recorder",
+    "icon": "video",
+    "description": "Record your screen and webcam",
+    "category": "Media",
+    "launch_type": "iframe",
+    "url": "https://www.screenrec.com",
+    "tags": [
+      "screen",
+      "recorder"
+    ]
+  },
+  {
+    "id": "stream-player",
+    "name": "stream-player",
+    "display_name": "Stream Player",
+    "icon": "tv",
+    "description": "Watch live streams from various platforms",
+    "category": "Media",
+    "launch_type": "iframe",
+    "url": "https://www.twitch.tv",
+    "tags": [
+      "stream",
+      "live",
+      "twitch"
+    ]
+  },
+  {
+    "id": "ebook-reader",
+    "name": "ebook-reader",
+    "display_name": "E-Book Reader",
+    "icon": "book",
+    "description": "Read and manage your e-book collection",
+    "category": "Media",
+    "launch_type": "route",
+    "url": "/storage",
+    "tags": [
+      "ebook",
+      "reading",
+      "books"
+    ]
+  },
+  {
+    "id": "notes",
+    "name": "notes",
+    "display_name": "Notes",
+    "icon": "file-text",
+    "description": "Write and organize notes with categories",
+    "category": "Productivity",
+    "launch_type": "route",
+    "url": "/tools",
+    "featured": true,
+    "tags": [
+      "notes",
+      "writing"
+    ]
+  },
+  {
+    "id": "calendar",
+    "name": "calendar",
+    "display_name": "Calendar",
+    "icon": "calendar",
+    "description": "View and manage events and reminders",
+    "category": "Productivity",
+    "launch_type": "iframe",
+    "url": "https://calendar.google.com",
+    "tags": [
+      "calendar",
+      "events",
+      "schedule"
+    ]
+  },
+  {
+    "id": "whiteboard",
+    "name": "whiteboard",
+    "display_name": "Whiteboard",
+    "icon": "edit",
+    "description": "Draw and sketch with collaborative tools",
+    "category": "Productivity",
+    "launch_type": "iframe",
+    "url": "https://excalidraw.com",
+    "featured": true,
+    "tags": [
+      "draw",
+      "sketch",
+      "whiteboard"
+    ]
+  },
+  {
+    "id": "todo-list",
+    "name": "todo-list",
+    "display_name": "Todo List",
+    "icon": "list",
+    "description": "Manage tasks with priorities and categories",
+    "category": "Productivity",
+    "launch_type": "route",
+    "url": "/tools",
+    "tags": [
+      "todo",
+      "tasks",
+      "productivity"
+    ]
+  },
+  {
+    "id": "bookmarks",
+    "name": "bookmarks",
+    "display_name": "Bookmarks",
+    "icon": "bookmark",
+    "description": "Save and organize web bookmarks",
+    "category": "Productivity",
+    "launch_type": "route",
+    "url": "/tools",
+    "tags": [
+      "bookmarks",
+      "links"
+    ]
+  },
+  {
+    "id": "password-manager",
+    "name": "password-manager",
+    "display_name": "Password Manager",
+    "icon": "lock",
+    "description": "Generate and store secure passwords",
+    "category": "Productivity",
+    "launch_type": "route",
+    "url": "/tools",
+    "tags": [
+      "passwords",
+      "security"
+    ]
+  },
+  {
+    "id": "qrcode-generator",
+    "name": "qrcode-generator",
+    "display_name": "QR Code Generator",
+    "icon": "grid",
+    "description": "Generate QR codes for any text or URL",
+    "category": "Productivity",
+    "launch_type": "route",
+    "url": "/tools",
+    "tags": [
+      "qr",
+      "barcode"
+    ]
+  },
+  {
+    "id": "url-shortener",
+    "name": "url-shortener",
+    "display_name": "URL Shortener",
+    "icon": "link",
+    "description": "Shorten long URLs with custom aliases",
+    "category": "Productivity",
+    "launch_type": "route",
+    "url": "/tools",
+    "tags": [
+      "url",
+      "shortener"
+    ]
+  },
+  {
+    "id": "clipboard-manager",
+    "name": "clipboard-manager",
+    "display_name": "Clipboard Manager",
+    "icon": "copy",
+    "description": "Manage clipboard history and snippets",
+    "category": "Productivity",
+    "launch_type": "iframe",
+    "url": "https://clippy.io",
+    "tags": [
+      "clipboard",
+      "copy",
+      "paste"
+    ]
+  },
+  {
+    "id": "timer-alarm",
+    "name": "timer-alarm",
+    "display_name": "Timer & Alarm",
+    "icon": "clock",
+    "description": "Set countdown timers and alarms",
+    "category": "Productivity",
+    "launch_type": "iframe",
+    "url": "https://www.online-stopwatch.com",
+    "tags": [
+      "timer",
+      "alarm",
+      "stopwatch"
+    ]
+  },
+  {
+    "id": "calculator",
+    "name": "calculator",
+    "display_name": "Calculator",
+    "icon": "hash",
+    "description": "Scientific calculator with unit converter",
+    "category": "Utilities",
+    "launch_type": "iframe",
+    "url": "https://www.desmos.com/scientific",
+    "featured": true,
+    "tags": [
+      "calculator",
+      "math"
+    ]
+  },
+  {
+    "id": "unit-converter",
+    "name": "unit-converter",
+    "display_name": "Unit Converter",
+    "icon": "percent",
+    "description": "Convert between any units of measurement",
+    "category": "Utilities",
+    "launch_type": "iframe",
+    "url": "https://www.convertunits.com",
+    "tags": [
+      "converter",
+      "units"
+    ]
+  },
+  {
+    "id": "color-picker",
+    "name": "color-picker",
+    "display_name": "Color Picker",
+    "icon": "eye",
+    "description": "Pick colors and get hex/rgb values",
+    "category": "Utilities",
+    "launch_type": "iframe",
+    "url": "https://coolors.co",
+    "tags": [
+      "color",
+      "picker",
+      "design"
+    ]
+  },
+  {
+    "id": "font-viewer",
+    "name": "font-viewer",
+    "display_name": "Font Viewer",
+    "icon": "type",
+    "description": "Browse and preview system fonts",
+    "category": "Utilities",
+    "launch_type": "iframe",
+    "url": "https://fonts.google.com",
+    "tags": [
+      "fonts",
+      "typography"
+    ]
+  },
+  {
+    "id": "ip-lookup",
+    "name": "ip-lookup",
+    "display_name": "IP Address Lookup",
+    "icon": "globe",
+    "description": "Look up your IP address and location",
+    "category": "Utilities",
+    "launch_type": "iframe",
+    "url": "https://whatismyipaddress.com",
+    "tags": [
+      "ip",
+      "network",
+      "lookup"
+    ]
+  },
+  {
+    "id": "file-converter",
+    "name": "file-converter",
+    "display_name": "File Converter",
+    "icon": "upload",
+    "description": "Convert files between different formats",
+    "category": "Utilities",
+    "launch_type": "iframe",
+    "url": "https://cloudconvert.com",
+    "tags": [
+      "convert",
+      "files"
+    ]
+  },
+  {
+    "id": "timezone-converter",
+    "name": "timezone-converter",
+    "display_name": "Timezone Converter",
+    "icon": "clock",
+    "description": "Convert times across different timezones",
+    "category": "Utilities",
+    "launch_type": "iframe",
+    "url": "https://www.timeanddate.com/worldclock/converter.html",
+    "tags": [
+      "timezone",
+      "time"
+    ]
+  },
+  {
+    "id": "countdown",
+    "name": "countdown",
+    "display_name": "Countdown Timer",
+    "icon": "clock",
+    "description": "Set a countdown to any date or event",
+    "category": "Utilities",
+    "launch_type": "iframe",
+    "url": "https://www.timeanddate.com/countdown",
+    "tags": [
+      "countdown",
+      "timer"
+    ]
+  },
+  {
+    "id": "random-generator",
+    "name": "random-generator",
+    "display_name": "Random Generator",
+    "icon": "hash",
+    "description": "Generate random numbers, passwords, and more",
+    "category": "Utilities",
+    "launch_type": "iframe",
+    "url": "https://www.random.org",
+    "tags": [
+      "random",
+      "generator"
+    ]
+  },
+  {
+    "id": "barcode-scanner",
+    "name": "barcode-scanner",
+    "display_name": "Barcode Scanner",
+    "icon": "camera",
+    "description": "Scan barcodes and QR codes with your camera",
+    "category": "Utilities",
+    "launch_type": "iframe",
+    "url": "https://barcode.tec-it.com",
+    "tags": [
+      "barcode",
+      "scanner"
+    ]
+  },
+  {
+    "id": "chess",
+    "name": "chess",
+    "display_name": "Chess",
+    "icon": "grid",
+    "description": "Play chess against AI or friends",
+    "category": "Games",
+    "launch_type": "iframe",
+    "url": "https://www.chess.com/play/computer",
+    "featured": true,
+    "tags": [
+      "chess",
+      "game",
+      "strategy"
+    ]
+  },
+  {
+    "id": "sudoku",
+    "name": "sudoku",
+    "display_name": "Sudoku",
+    "icon": "grid",
+    "description": "Solve Sudoku puzzles with varying difficulty",
+    "category": "Games",
+    "launch_type": "iframe",
+    "url": "https://sudoku.com",
+    "tags": [
+      "sudoku",
+      "puzzle"
+    ]
+  },
+  {
+    "id": 2048,
+    "name": 2048,
+    "display_name": 2048,
+    "icon": "grid",
+    "description": "Classic 2048 number puzzle game",
+    "category": "Games",
+    "launch_type": "iframe",
+    "url": "https://play2048.co",
+    "tags": [
+      "2048",
+      "puzzle",
+      "game"
+    ]
+  },
+  {
+    "id": "snake",
+    "name": "snake",
+    "display_name": "Snake Game",
+    "icon": "activity",
+    "description": "Classic snake game with increasing speed",
+    "category": "Games",
+    "launch_type": "iframe",
+    "url": "https://playsnake.org",
+    "tags": [
+      "snake",
+      "classic",
+      "game"
+    ]
+  },
+  {
+    "id": "tetris",
+    "name": "tetris",
+    "display_name": "Tetris",
+    "icon": "grid",
+    "description": "Classic Tetris block puzzle game",
+    "category": "Games",
+    "launch_type": "iframe",
+    "url": "https://tetris.com/play-tetris",
+    "featured": true,
+    "tags": [
+      "tetris",
+      "blocks",
+      "puzzle"
+    ]
+  },
+  {
+    "id": "pacman",
+    "name": "pacman",
+    "display_name": "Pac-Man",
+    "icon": "grid",
+    "description": "Classic Pac-Man arcade game",
+    "category": "Games",
+    "launch_type": "iframe",
+    "url": "https://www.google.com/logos/2010/pacman10-i.html",
+    "tags": [
+      "pacman",
+      "arcade",
+      "classic"
+    ]
+  },
+  {
+    "id": "solitaire",
+    "name": "solitaire",
+    "display_name": "Solitaire",
+    "icon": "grid",
+    "description": "Classic Klondike Solitaire card game",
+    "category": "Games",
+    "launch_type": "iframe",
+    "url": "https://solitaired.com",
+    "tags": [
+      "solitaire",
+      "cards",
+      "game"
+    ]
+  },
+  {
+    "id": "minesweeper",
+    "name": "minesweeper",
+    "display_name": "Minesweeper",
+    "icon": "grid",
+    "description": "Classic Minesweeper puzzle game",
+    "category": "Games",
+    "launch_type": "iframe",
+    "url": "https://minesweeperonline.com",
+    "tags": [
+      "minesweeper",
+      "puzzle"
+    ]
+  },
+  {
+    "id": "wordle",
+    "name": "wordle",
+    "display_name": "Wordle",
+    "icon": "edit",
+    "description": "Daily word guessing puzzle game",
+    "category": "Games",
+    "launch_type": "iframe",
+    "url": "https://www.nytimes.com/games/wordle",
+    "featured": true,
+    "tags": [
+      "wordle",
+      "words",
+      "puzzle"
+    ]
+  },
+  {
+    "id": "crossword",
+    "name": "crossword",
+    "display_name": "Crossword",
+    "icon": "grid",
+    "description": "Daily crossword puzzles",
+    "category": "Games",
+    "launch_type": "iframe",
+    "url": "https://www.nytimes.com/crosswords",
+    "tags": [
+      "crossword",
+      "puzzle"
+    ]
+  },
+  {
+    "id": "ai-studio",
+    "name": "ai-studio",
+    "display_name": "AI Studio",
+    "icon": "zap",
+    "description": "Chat with AI models and analyze files",
+    "category": "AI Tools",
+    "launch_type": "route",
+    "url": "/ai",
+    "featured": true,
+    "tags": [
+      "ai",
+      "chat",
+      "llm"
+    ]
+  },
+  {
+    "id": "ai-image-gen",
+    "name": "ai-image-gen",
+    "display_name": "AI Image Generator",
+    "icon": "image",
+    "description": "Generate images from text descriptions",
+    "category": "AI Tools",
+    "launch_type": "iframe",
+    "url": "https://stability.ai",
+    "featured": true,
+    "tags": [
+      "ai",
+      "image",
+      "generation"
+    ]
+  },
+  {
+    "id": "ai-text-gen",
+    "name": "ai-text-gen",
+    "display_name": "AI Text Generator",
+    "icon": "file-text",
+    "description": "Generate text content with AI",
+    "category": "AI Tools",
+    "launch_type": "route",
+    "url": "/ai",
+    "tags": [
+      "ai",
+      "text",
+      "writing"
+    ]
+  },
+  {
+    "id": "ai-code-gen",
+    "name": "ai-code-gen",
+    "display_name": "AI Code Generator",
+    "icon": "code",
+    "description": "Generate code from natural language",
+    "category": "AI Tools",
+    "launch_type": "route",
+    "url": "/ai",
+    "tags": [
+      "ai",
+      "code",
+      "programming"
+    ]
+  },
+  {
+    "id": "ai-translator",
+    "name": "ai-translator",
+    "display_name": "AI Translator",
+    "icon": "globe",
+    "description": "Translate text between any languages",
+    "category": "AI Tools",
+    "launch_type": "iframe",
+    "url": "https://translate.google.com",
+    "featured": true,
+    "tags": [
+      "translate",
+      "language",
+      "ai"
+    ]
+  },
+  {
+    "id": "ai-summarizer",
+    "name": "ai-summarizer",
+    "display_name": "AI Summarizer",
+    "icon": "file-text",
+    "description": "Summarize long articles and documents",
+    "category": "AI Tools",
+    "launch_type": "route",
+    "url": "/ai",
+    "tags": [
+      "summarize",
+      "ai",
+      "text"
+    ]
+  },
+  {
+    "id": "voice-assistant",
+    "name": "voice-assistant",
+    "display_name": "Voice Assistant",
+    "icon": "mic",
+    "description": "Voice-controlled AI assistant",
+    "category": "AI Tools",
+    "launch_type": "route",
+    "url": "/display",
+    "tags": [
+      "voice",
+      "assistant",
+      "ai"
+    ]
+  },
+  {
+    "id": "ai-file-analysis",
+    "name": "ai-file-analysis",
+    "display_name": "AI File Analysis",
+    "icon": "search",
+    "description": "Analyze files with AI",
+    "category": "AI Tools",
+    "launch_type": "route",
+    "url": "/ai",
+    "tags": [
+      "file",
+      "analysis",
+      "ai"
+    ]
+  },
+  {
+    "id": "network-monitor",
+    "name": "network-monitor",
+    "display_name": "Network Monitor",
+    "icon": "wifi",
+    "description": "Monitor network traffic and bandwidth",
+    "category": "Network",
+    "launch_type": "route",
+    "url": "/devices",
+    "featured": true,
+    "tags": [
+      "network",
+      "monitoring"
+    ]
+  },
+  {
+    "id": "speed-test",
+    "name": "speed-test",
+    "display_name": "Speed Test",
+    "icon": "wifi",
+    "description": "Test your internet connection speed",
+    "category": "Network",
+    "launch_type": "iframe",
+    "url": "https://fast.com",
+    "featured": true,
+    "tags": [
+      "speed",
+      "internet",
+      "test"
+    ]
+  },
+  {
+    "id": "ping-tool",
+    "name": "ping-tool",
+    "display_name": "Ping Tool",
+    "icon": "activity",
+    "description": "Ping hosts and monitor latency",
+    "category": "Network",
+    "launch_type": "route",
+    "url": "/system-tools",
+    "tags": [
+      "ping",
+      "network",
+      "latency"
+    ]
+  },
+  {
+    "id": "wifi-analyzer",
+    "name": "wifi-analyzer",
+    "display_name": "WiFi Analyzer",
+    "icon": "wifi",
+    "description": "Analyze WiFi networks and signal strength",
+    "category": "Network",
+    "launch_type": "route",
+    "url": "/settings",
+    "tags": [
+      "wifi",
+      "analyzer"
+    ]
+  },
+  {
+    "id": "vpn-manager",
+    "name": "vpn-manager",
+    "display_name": "VPN Manager",
+    "icon": "lock",
+    "description": "Manage VPN connections",
+    "category": "Network",
+    "launch_type": "iframe",
+    "url": "https://www.windscribe.com",
+    "tags": [
+      "vpn",
+      "network",
+      "privacy"
+    ]
+  },
+  {
+    "id": "dns-lookup",
+    "name": "dns-lookup",
+    "display_name": "DNS Lookup",
+    "icon": "globe",
+    "description": "Look up DNS records for any domain",
+    "category": "Network",
+    "launch_type": "iframe",
+    "url": "https://dns.google",
+    "tags": [
+      "dns",
+      "lookup",
+      "network"
+    ]
+  },
+  {
+    "id": "network-scanner",
+    "name": "network-scanner",
+    "display_name": "Network Scanner",
+    "icon": "monitor",
+    "description": "Scan your network for connected devices",
+    "category": "Network",
+    "launch_type": "route",
+    "url": "/devices",
+    "tags": [
+      "scan",
+      "network",
+      "devices"
+    ]
+  },
+  {
+    "id": "port-checker",
+    "name": "port-checker",
+    "display_name": "Port Checker",
+    "icon": "server",
+    "description": "Check if ports are open and accessible",
+    "category": "Network",
+    "launch_type": "iframe",
+    "url": "https://www.yougetsignal.com/tools/open-ports",
+    "tags": [
+      "ports",
+      "network",
+      "security"
+    ]
+  },
+  {
+    "id": "bandwidth-monitor",
+    "name": "bandwidth-monitor",
+    "display_name": "Bandwidth Monitor",
+    "icon": "trending-up",
+    "description": "Track bandwidth usage over time",
+    "category": "Network",
+    "launch_type": "route",
+    "url": "/",
+    "tags": [
+      "bandwidth",
+      "monitoring"
+    ]
+  },
+  {
+    "id": "hotspot-manager",
+    "name": "hotspot-manager",
+    "display_name": "Hotspot Manager",
+    "icon": "wifi",
+    "description": "Create and manage WiFi hotspots",
+    "category": "Network",
+    "launch_type": "route",
+    "url": "/settings",
+    "tags": [
+      "hotspot",
+      "wifi",
+      "access-point"
+    ]
+  },
+  {
+    "id": "firewall",
+    "name": "firewall",
+    "display_name": "Firewall",
+    "icon": "shield",
+    "description": "Manage firewall rules and settings",
+    "category": "Security",
+    "launch_type": "iframe",
+    "url": "https://www.shodan.io",
+    "featured": true,
+    "tags": [
+      "firewall",
+      "security"
+    ]
+  },
+  {
+    "id": "password-generator",
+    "name": "password-generator",
+    "display_name": "Password Generator",
+    "icon": "lock",
+    "description": "Generate strong, secure passwords",
+    "category": "Security",
+    "launch_type": "route",
+    "url": "/tools",
+    "tags": [
+      "password",
+      "security",
+      "generator"
+    ]
+  },
+  {
+    "id": "encryption-tool",
+    "name": "encryption-tool",
+    "display_name": "Encryption Tool",
+    "icon": "lock",
+    "description": "Encrypt and decrypt files securely",
+    "category": "Security",
+    "launch_type": "route",
+    "url": "/storage",
+    "tags": [
+      "encryption",
+      "security"
+    ]
+  },
+  {
+    "id": "vulnerability-scanner",
+    "name": "vulnerability-scanner",
+    "display_name": "Vulnerability Scanner",
+    "icon": "shield",
+    "description": "Scan for system vulnerabilities",
+    "category": "Security",
+    "launch_type": "iframe",
+    "url": "https://pentest-tools.com",
+    "tags": [
+      "security",
+      "vulnerability",
+      "scan"
+    ]
+  },
+  {
+    "id": "ssl-checker",
+    "name": "ssl-checker",
+    "display_name": "SSL Certificate Checker",
+    "icon": "shield",
+    "description": "Check SSL certificate validity and expiry",
+    "category": "Security",
+    "launch_type": "iframe",
+    "url": "https://www.sslshopper.com/ssl-checker.html",
+    "tags": [
+      "ssl",
+      "certificate",
+      "security"
+    ]
+  },
+  {
+    "id": "2fa-manager",
+    "name": "2fa-manager",
+    "display_name": "2FA Manager",
+    "icon": "lock",
+    "description": "Manage two-factor authentication codes",
+    "category": "Security",
+    "launch_type": "iframe",
+    "url": "https://www.authy.com",
+    "tags": [
+      "2fa",
+      "authentication",
+      "security"
+    ]
+  },
+  {
+    "id": "privacy-checker",
+    "name": "privacy-checker",
+    "display_name": "Privacy Checker",
+    "icon": "eye",
+    "description": "Check your online privacy status",
+    "category": "Security",
+    "launch_type": "iframe",
+    "url": "https://privacycheck.securingtomorrow.com",
+    "tags": [
+      "privacy",
+      "security"
+    ]
+  },
+  {
+    "id": "malware-scanner",
+    "name": "malware-scanner",
+    "display_name": "Malware Scanner",
+    "icon": "shield",
+    "description": "Scan files for malware and threats",
+    "category": "Security",
+    "launch_type": "iframe",
+    "url": "https://www.virustotal.com",
+    "tags": [
+      "malware",
+      "scan",
+      "security"
+    ]
+  },
+  {
+    "id": "github",
+    "name": "github",
+    "display_name": "GitHub",
+    "icon": "github",
+    "description": "Browse repositories and manage code",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://github.com",
+    "featured": true,
+    "tags": [
+      "github",
+      "code",
+      "git"
+    ]
+  },
+  {
+    "id": "gitlab",
+    "name": "gitlab",
+    "display_name": "GitLab",
+    "icon": "git-branch",
+    "description": "DevOps platform with CI/CD pipelines",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://gitlab.com",
+    "tags": [
+      "gitlab",
+      "devops",
+      "ci"
+    ]
+  },
+  {
+    "id": "gmail",
+    "name": "gmail",
+    "display_name": "Gmail",
+    "icon": "mail",
+    "description": "Access your Gmail inbox",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://mail.google.com",
+    "featured": true,
+    "tags": [
+      "email",
+      "gmail"
+    ]
+  },
+  {
+    "id": "google-drive",
+    "name": "google-drive",
+    "display_name": "Google Drive",
+    "icon": "hard-drive",
+    "description": "Access your Google Drive files",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://drive.google.com",
+    "tags": [
+      "drive",
+      "cloud",
+      "storage"
+    ]
+  },
+  {
+    "id": "google-docs",
+    "name": "google-docs",
+    "display_name": "Google Docs",
+    "icon": "file-text",
+    "description": "Create and edit documents online",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://docs.google.com",
+    "tags": [
+      "docs",
+      "documents",
+      "writing"
+    ]
+  },
+  {
+    "id": "google-sheets",
+    "name": "google-sheets",
+    "display_name": "Google Sheets",
+    "icon": "grid",
+    "description": "Create and edit spreadsheets online",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://sheets.google.com",
+    "tags": [
+      "sheets",
+      "spreadsheets"
+    ]
+  },
+  {
+    "id": "youtube",
+    "name": "youtube",
+    "display_name": "YouTube",
+    "icon": "video",
+    "description": "Watch and discover videos",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://youtube.com",
+    "featured": true,
+    "tags": [
+      "youtube",
+      "video",
+      "streaming"
+    ]
+  },
+  {
+    "id": "spotify",
+    "name": "spotify",
+    "display_name": "Spotify",
+    "icon": "music",
+    "description": "Stream music and podcasts",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://open.spotify.com",
+    "featured": true,
+    "tags": [
+      "spotify",
+      "music",
+      "streaming"
+    ]
+  },
+  {
+    "id": "netflix",
+    "name": "netflix",
+    "display_name": "Netflix",
+    "icon": "tv",
+    "description": "Stream movies and TV shows",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://netflix.com",
+    "tags": [
+      "netflix",
+      "streaming",
+      "video"
+    ]
+  },
+  {
+    "id": "reddit",
+    "name": "reddit",
+    "display_name": "Reddit",
+    "icon": "message-circle",
+    "description": "Browse communities and discussions",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://reddit.com",
+    "tags": [
+      "reddit",
+      "social",
+      "community"
+    ]
+  },
+  {
+    "id": "wikipedia",
+    "name": "wikipedia",
+    "display_name": "Wikipedia",
+    "icon": "book",
+    "description": "Browse the free encyclopedia",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://wikipedia.org",
+    "featured": true,
+    "tags": [
+      "wikipedia",
+      "reference",
+      "knowledge"
+    ]
+  },
+  {
+    "id": "stackoverflow",
+    "name": "stackoverflow",
+    "display_name": "Stack Overflow",
+    "icon": "code",
+    "description": "Q&A for programmers",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://stackoverflow.com",
+    "tags": [
+      "programming",
+      "qa",
+      "code"
+    ]
+  },
+  {
+    "id": "docker-hub",
+    "name": "docker-hub",
+    "display_name": "Docker Hub",
+    "icon": "server",
+    "description": "Browse Docker container images",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://hub.docker.com",
+    "tags": [
+      "docker",
+      "containers"
+    ]
+  },
+  {
+    "id": "npm-registry",
+    "name": "npm-registry",
+    "display_name": "npm Registry",
+    "icon": "box",
+    "description": "Browse npm packages",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://www.npmjs.com",
+    "tags": [
+      "npm",
+      "packages",
+      "javascript"
+    ]
+  },
+  {
+    "id": "pypi",
+    "name": "pypi",
+    "display_name": "PyPI",
+    "icon": "box",
+    "description": "Browse Python packages",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://pypi.org",
+    "tags": [
+      "python",
+      "packages",
+      "pypi"
+    ]
+  },
+  {
+    "id": "discord",
+    "name": "discord",
+    "display_name": "Discord",
+    "icon": "message-square",
+    "description": "Chat with communities and friends",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://discord.com/app",
+    "tags": [
+      "discord",
+      "chat",
+      "social"
+    ]
+  },
+  {
+    "id": "slack",
+    "name": "slack",
+    "display_name": "Slack",
+    "icon": "message-circle",
+    "description": "Team communication and collaboration",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://slack.com",
+    "tags": [
+      "slack",
+      "chat",
+      "team"
+    ]
+  },
+  {
+    "id": "figma",
+    "name": "figma",
+    "display_name": "Figma",
+    "icon": "pen-tool",
+    "description": "Collaborative design and prototyping",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://figma.com",
+    "tags": [
+      "figma",
+      "design",
+      "prototyping"
+    ]
+  },
+  {
+    "id": "notion",
+    "name": "notion",
+    "display_name": "Notion",
+    "icon": "file-text",
+    "description": "All-in-one workspace for notes, docs, and projects",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://notion.so",
+    "tags": [
+      "notion",
+      "notes",
+      "workspace"
+    ]
+  },
+  {
+    "id": "linear",
+    "name": "linear",
+    "display_name": "Linear",
+    "icon": "activity",
+    "description": "Issue tracking and project management",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://linear.app",
+    "tags": [
+      "linear",
+      "issues",
+      "project-management"
+    ]
+  },
+  {
+    "id": "vercel",
+    "name": "vercel",
+    "display_name": "Vercel",
+    "icon": "triangle",
+    "description": "Deploy web projects instantly",
+    "category": "External Services",
+    "launch_type": "tab",
+    "url": "https://vercel.com",
+    "tags": [
+      "vercel",
+      "deploy",
+      "hosting"
+    ]
+  },
+  {
+    "id": "khan-academy",
+    "name": "khan-academy",
+    "display_name": "Khan Academy",
+    "icon": "book",
+    "description": "Free online courses and lessons",
+    "category": "Education",
+    "launch_type": "tab",
+    "url": "https://www.khanacademy.org",
+    "featured": true,
+    "tags": [
+      "education",
+      "courses",
+      "learning"
+    ]
+  },
+  {
+    "id": "coursera",
+    "name": "coursera",
+    "display_name": "Coursera",
+    "icon": "book",
+    "description": "Online courses from top universities",
+    "category": "Education",
+    "launch_type": "tab",
+    "url": "https://www.coursera.org",
+    "tags": [
+      "courses",
+      "learning",
+      "university"
+    ]
+  },
+  {
+    "id": "udemy",
+    "name": "udemy",
+    "display_name": "Udemy",
+    "icon": "book",
+    "description": "Online learning and teaching marketplace",
+    "category": "Education",
+    "launch_type": "tab",
+    "url": "https://www.udemy.com",
+    "tags": [
+      "courses",
+      "learning"
+    ]
+  },
+  {
+    "id": "duolingo",
+    "name": "duolingo",
+    "display_name": "Duolingo",
+    "icon": "globe",
+    "description": "Learn languages for free",
+    "category": "Education",
+    "launch_type": "tab",
+    "url": "https://www.duolingo.com",
+    "featured": true,
+    "tags": [
+      "language",
+      "learning"
+    ]
+  },
+  {
+    "id": "wolfram-alpha",
+    "name": "wolfram-alpha",
+    "display_name": "Wolfram Alpha",
+    "icon": "hash",
+    "description": "Computational knowledge engine",
+    "category": "Education",
+    "launch_type": "tab",
+    "url": "https://www.wolframalpha.com",
+    "tags": [
+      "math",
+      "science",
+      "knowledge"
+    ]
+  },
+  {
+    "id": "yahoo-finance",
+    "name": "yahoo-finance",
+    "display_name": "Yahoo Finance",
+    "icon": "trending-up",
+    "description": "Stock market data and financial news",
+    "category": "Finance",
+    "launch_type": "tab",
+    "url": "https://finance.yahoo.com",
+    "featured": true,
+    "tags": [
+      "finance",
+      "stocks",
+      "market"
+    ]
+  },
+  {
+    "id": "coinbase",
+    "name": "coinbase",
+    "display_name": "Coinbase",
+    "icon": "dollar-sign",
+    "description": "Buy and sell cryptocurrency",
+    "category": "Finance",
+    "launch_type": "tab",
+    "url": "https://www.coinbase.com",
+    "tags": [
+      "crypto",
+      "bitcoin",
+      "exchange"
+    ]
+  },
+  {
+    "id": "tradingview",
+    "name": "tradingview",
+    "display_name": "TradingView",
+    "icon": "trending-up",
+    "description": "Advanced charting and trading tools",
+    "category": "Finance",
+    "launch_type": "tab",
+    "url": "https://www.tradingview.com",
+    "tags": [
+      "trading",
+      "charts",
+      "stocks"
+    ]
+  },
+  {
+    "id": "budget-tracker",
+    "name": "budget-tracker",
+    "display_name": "Budget Tracker",
+    "icon": "dollar-sign",
+    "description": "Track personal finances and budgets",
+    "category": "Finance",
+    "launch_type": "tab",
+    "url": "https://mint.com",
+    "tags": [
+      "budget",
+      "finance",
+      "tracking"
+    ]
+  },
+  {
+    "id": "currency-converter",
+    "name": "currency-converter",
+    "display_name": "Currency Converter",
+    "icon": "percent",
+    "description": "Convert between world currencies",
+    "category": "Finance",
+    "launch_type": "iframe",
+    "url": "https://www.xe.com",
+    "tags": [
+      "currency",
+      "exchange",
+      "converter"
+    ]
+  },
+  {
+    "id": "meditation",
+    "name": "meditation",
+    "display_name": "Meditation Timer",
+    "icon": "moon",
+    "description": "Guided meditation and breathing exercises",
+    "category": "Health",
+    "launch_type": "iframe",
+    "url": "https://www.calm.com",
+    "tags": [
+      "meditation",
+      "mindfulness",
+      "health"
+    ]
+  },
+  {
+    "id": "workout-tracker",
+    "name": "workout-tracker",
+    "display_name": "Workout Tracker",
+    "icon": "activity",
+    "description": "Track exercises and fitness progress",
+    "category": "Health",
+    "launch_type": "tab",
+    "url": "https://www.myfitnesspal.com",
+    "tags": [
+      "fitness",
+      "workout",
+      "health"
+    ]
+  },
+  {
+    "id": "calorie-counter",
+    "name": "calorie-counter",
+    "display_name": "Calorie Counter",
+    "icon": "heart",
+    "description": "Track daily calorie intake and nutrition",
+    "category": "Health",
+    "launch_type": "tab",
+    "url": "https://www.cronometer.com",
+    "tags": [
+      "calories",
+      "nutrition",
+      "diet"
+    ]
+  },
+  {
+    "id": "sleep-tracker",
+    "name": "sleep-tracker",
+    "display_name": "Sleep Tracker",
+    "icon": "moon",
+    "description": "Track and analyze sleep patterns",
+    "category": "Health",
+    "launch_type": "iframe",
+    "url": "https://www.sleepcycle.com",
+    "tags": [
+      "sleep",
+      "tracking",
+      "health"
+    ]
+  },
+  {
+    "id": "water-reminder",
+    "name": "water-reminder",
+    "display_name": "Water Reminder",
+    "icon": "droplets",
+    "description": "Track daily water intake and stay hydrated",
+    "category": "Health",
+    "launch_type": "iframe",
+    "url": "https://www.waterminder.com",
+    "tags": [
+      "water",
+      "hydration",
+      "health"
+    ]
+  },
+  {
+    "id": "weather-forecast",
+    "name": "weather-forecast",
+    "display_name": "Weather Forecast",
+    "icon": "cloud",
+    "description": "Current conditions and 7-day forecast",
+    "category": "Weather",
+    "launch_type": "iframe",
+    "url": "https://weather.com",
+    "featured": true,
+    "tags": [
+      "weather",
+      "forecast"
+    ]
+  },
+  {
+    "id": "radar-map",
+    "name": "radar-map",
+    "display_name": "Weather Radar",
+    "icon": "map-pin",
+    "description": "Interactive weather radar map",
+    "category": "Weather",
+    "launch_type": "iframe",
+    "url": "https://www.wunderground.com/wundermap",
+    "tags": [
+      "radar",
+      "weather",
+      "map"
+    ]
+  },
+  {
+    "id": "hurricane-tracker",
+    "name": "hurricane-tracker",
+    "display_name": "Hurricane Tracker",
+    "icon": "wind",
+    "description": "Track active hurricanes and storms",
+    "category": "Weather",
+    "launch_type": "iframe",
+    "url": "https://www.nhc.noaa.gov",
+    "tags": [
+      "hurricane",
+      "storm",
+      "weather"
+    ]
+  },
+  {
+    "id": "air-quality",
+    "name": "air-quality",
+    "display_name": "Air Quality",
+    "icon": "wind",
+    "description": "Check local air quality index",
+    "category": "Weather",
+    "launch_type": "iframe",
+    "url": "https://www.iqair.com",
+    "tags": [
+      "air",
+      "quality",
+      "pollution"
+    ]
+  },
+  {
+    "id": "marine-forecast",
+    "name": "marine-forecast",
+    "display_name": "Marine Forecast",
+    "icon": "droplets",
+    "description": "Marine weather and tide forecasts",
+    "category": "Weather",
+    "launch_type": "iframe",
+    "url": "https://www.tide-forecast.com",
+    "tags": [
+      "marine",
+      "tides",
+      "forecast"
+    ]
+  },
+  {
+    "id": "google-maps",
+    "name": "google-maps",
+    "display_name": "Google Maps",
+    "icon": "map-pin",
+    "description": "Interactive maps and navigation",
+    "category": "Travel",
+    "launch_type": "tab",
+    "url": "https://maps.google.com",
+    "featured": true,
+    "tags": [
+      "maps",
+      "navigation",
+      "travel"
+    ]
+  },
+  {
+    "id": "flight-tracker",
+    "name": "flight-tracker",
+    "display_name": "Flight Tracker",
+    "icon": "navigation",
+    "description": "Track flights in real-time",
+    "category": "Travel",
+    "launch_type": "iframe",
+    "url": "https://flightaware.com",
+    "tags": [
+      "flights",
+      "tracking",
+      "travel"
+    ]
+  },
+  {
+    "id": "hotel-booking",
+    "name": "hotel-booking",
+    "display_name": "Hotel Booking",
+    "icon": "home",
+    "description": "Search and book hotels worldwide",
+    "category": "Travel",
+    "launch_type": "tab",
+    "url": "https://www.booking.com",
+    "tags": [
+      "hotels",
+      "booking",
+      "travel"
+    ]
+  },
+  {
+    "id": "public-transit",
+    "name": "public-transit",
+    "display_name": "Public Transit",
+    "icon": "map",
+    "description": "Plan routes with public transportation",
+    "category": "Travel",
+    "launch_type": "tab",
+    "url": "https://moovit.com",
+    "tags": [
+      "transit",
+      "routes",
+      "travel"
+    ]
+  },
+  {
+    "id": "time-zone-map",
+    "name": "time-zone-map",
+    "display_name": "Time Zone Map",
+    "icon": "globe",
+    "description": "Interactive world time zone map",
+    "category": "Travel",
+    "launch_type": "iframe",
+    "url": "https://www.timeanddate.com/time/map",
+    "tags": [
+      "timezone",
+      "map",
+      "world"
+    ]
+  }
+]
