@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react'
 import {
   ShieldCheck, User, Check, X, Loader, AlertCircle,
   Info, Save, Eye, Edit3, Trash2, Lock, Settings
-, AlertTriangle} from 'lucide-react'
+, AlertTriangle
+} from 'lucide-react'
 import api from '../utils/api'
 import { useAuth } from '../hooks/useAuth'
 
