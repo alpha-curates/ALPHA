@@ -4,7 +4,8 @@ import {
   ChevronRight, Home, Upload, Plus, Search, X, Trash2,
   Edit3, Copy, ArrowRight, Loader, AlertCircle, Check, Info,
   Grid3X3, List, RefreshCw, Download
-, AlertTriangle} from 'lucide-react'
+, AlertTriangle
+} from 'lucide-react'
 import api from '../utils/api'
 
 interface FileEntry {
