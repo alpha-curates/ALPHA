@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import {
   Activity, X, Search, Loader, AlertCircle, Check, Info,
   Trash2, RefreshCw, Cpu, HardDrive, Zap
-} from 'lucide-react'
+, AlertTriangle} from 'lucide-react'
 import api from '../utils/api'
 
 interface ProcessInfo {
