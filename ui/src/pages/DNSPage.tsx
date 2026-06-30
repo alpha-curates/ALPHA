@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react'
 import {
   Globe, Plus, X, Trash2, Loader, AlertCircle, Check,
   Info, RefreshCw, Server, Save, Wifi
-, AlertTriangle} from 'lucide-react'
+, AlertTriangle
+} from 'lucide-react'
 import api from '../utils/api'
 
 interface DNSSettings {
