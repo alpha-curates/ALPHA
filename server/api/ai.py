@@ -72,12 +72,23 @@ def status():
     if active:
         result['active_provider'] = {'id': active.id, 'name': active.name, 'type': active.provider_type, 'model': active.default_model}
     elif not result['providers']:
-        # Add virtual OpenCode Zen provider
         result['providers'].append({
             'id': '__opencode__', 'name': 'OpenCode Zen', 'type': 'openai',
             'api_url': 'https://opencode.ai/zen/v1', 'api_key': '',
-            'default_model': 'big-pickle',
+            'default_model': 'deepseek-v4-flash-free',
             'models': OPENCODE_MODELS
+        })
+        result['providers'].append({
+            'id': '__keylessai__', 'name': 'KeylessAI (free)', 'type': 'openai',
+            'api_url': 'https://keylessai.thryx.workers.dev/v1', 'api_key': 'not-needed',
+            'default_model': 'openai-fast',
+            'models': KEYLESSAI_MODELS
+        })
+        result['providers'].append({
+            'id': '__pollinations__', 'name': 'Pollinations.ai', 'type': 'openai',
+            'api_url': 'https://text.pollinations.ai/openai', 'api_key': '',
+            'default_model': 'openai',
+            'models': POLLINATIONS_MODELS
         })
         result['active_provider'] = {'id': '__opencode__', 'name': 'OpenCode Zen', 'type': 'openai', 'model': 'deepseek-v4-flash-free'}
     return jsonify(result)

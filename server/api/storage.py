@@ -9,6 +9,8 @@ storage_bp = Blueprint('storage', __name__)
 
 STORAGE_BASE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'storage')
 EXTERNAL_DIR = os.path.join(STORAGE_BASE, 'external')
+USERS_DIR = os.path.join(STORAGE_BASE, 'users')
+SYSTEM_FILE_PATTERNS = {'.git', 'node_modules', '.venv', '__pycache__', '.trash', '.gitkeep', '.DS_Store', 'Thumbs.db', '.env', '.npm', '.cache', '*.pyc', '*.pyo', '*.egg-info'}
 
 _external_drives_lock = threading.Lock()
 _drive_watcher_started = False
@@ -446,9 +448,13 @@ def start_drive_watcher(app):
         t = threading.Thread(target=_auto_mount_loop, daemon=True)
         t.start()
 
-def safe_path(path):
-    full = os.path.abspath(os.path.join(STORAGE_BASE, path.lstrip('/')))
-    if not full.startswith(STORAGE_BASE):
+def safe_path(path, user_id=None):
+    base = STORAGE_BASE
+    if user_id:
+        base = os.path.join(USERS_DIR, user_id)
+        os.makedirs(base, exist_ok=True)
+    full = os.path.abspath(os.path.join(base, path.lstrip('/')))
+    if not full.startswith(base):
         return None
     return full
 
@@ -753,13 +759,15 @@ def remove_drive_from_pool():
 def list_files():
     path = request.args.get('path', '/')
     search = request.args.get('search', '').lower()
-    full = safe_path(path)
+    full = safe_path(path, str(current_user.id))
     if not full:
         return jsonify({'error': 'Access denied'}), 403
     if not os.path.exists(full):
         return jsonify({'error': 'Path not found'}), 404
     items = []
     for f in sorted(os.listdir(full)):
+        if f.startswith('.') or f in SYSTEM_FILE_PATTERNS or f.endswith('.pyc') or f.endswith('.pyo'):
+            continue
         if search and search not in f.lower():
             continue
         fp = os.path.join(full, f)
@@ -770,7 +778,7 @@ def list_files():
         ext = os.path.splitext(f)[1].lower()
         mime, _ = mimetypes.guess_type(f)
         items.append({
-            'name': f, 'path': os.path.relpath(fp, STORAGE_BASE),
+            'name': f, 'path': os.path.relpath(fp, os.path.join(USERS_DIR, str(current_user.id))),
             'type': 'directory' if os.path.isdir(fp) else 'file',
             'ext': ext, 'mime': mime or 'application/octet-stream',
             'size': stat.st_size, 'modified': stat.st_mtime,
@@ -779,9 +787,18 @@ def list_files():
 
 @storage_bp.route('/files/info', methods=['GET'])
 @login_required
+@storage_bp.route('/files/download', methods=['GET'])
+@login_required
+def download():
+    path = request.args.get('path', '')
+    full = safe_path(path, str(current_user.id))
+    if not full or not os.path.isfile(full):
+        return jsonify({'error': 'File not found'}), 404
+    return send_file(full, as_attachment=True, download_name=os.path.basename(full))
+
 def file_info():
     path = request.args.get('path', '')
-    full = safe_path(path)
+    full = safe_path(path, str(current_user.id))
     if not full or not os.path.exists(full):
         return jsonify({'error': 'File not found'}), 404
     stat = os.stat(full)
@@ -799,7 +816,7 @@ def file_info():
 @login_required
 def preview():
     path = request.args.get('path', '')
-    full = safe_path(path)
+    full = safe_path(path, str(current_user.id))
     if not full or not os.path.isfile(full):
         return jsonify({'error': 'File not found'}), 404
     mime, _ = mimetypes.guess_type(full)
@@ -813,7 +830,7 @@ def preview():
 @login_required
 def upload():
     path = request.args.get('path', '/')
-    full = safe_path(path)
+    full = safe_path(path, str(current_user.id))
     if not full:
         return jsonify({'error': 'Access denied'}), 403
     os.makedirs(full, exist_ok=True)
@@ -824,7 +841,7 @@ def upload():
 @login_required
 def delete_file():
     path = request.json.get('path', '')
-    full = safe_path(path)
+    full = safe_path(path, str(current_user.id))
     if not full or not os.path.exists(full):
         return jsonify({'error': 'Not found'}), 404
     trash_dir = os.path.join(STORAGE_BASE, '.trash')
@@ -843,7 +860,8 @@ def delete_file():
 def mkdir():
     path = request.json.get('path', '/')
     name = request.json.get('name', '')
-    full = safe_path(os.path.join(path, name))
+    uid = str(current_user.id)
+    full = safe_path(os.path.join(path, name), uid)
     if not full:
         return jsonify({'error': 'Access denied'}), 403
     os.makedirs(full, exist_ok=True)
@@ -854,8 +872,9 @@ def mkdir():
 def rename():
     path = request.json.get('path', '')
     new_name = request.json.get('new_name', '')
-    old = safe_path(path)
-    new = safe_path(os.path.join(os.path.dirname(path), new_name))
+    uid = str(current_user.id)
+    old = safe_path(path, uid)
+    new = safe_path(os.path.join(os.path.dirname(path), new_name), uid)
     if not old or not new:
         return jsonify({'error': 'Access denied'}), 403
     os.rename(old, new)
@@ -866,8 +885,9 @@ def rename():
 def move():
     path = request.json.get('path', '')
     dest = request.json.get('dest', '')
-    old = safe_path(path)
-    new = safe_path(os.path.join(dest, os.path.basename(path)))
+    uid = str(current_user.id)
+    old = safe_path(path, uid)
+    new = safe_path(os.path.join(dest, os.path.basename(path)), uid)
     if not old or not new:
         return jsonify({'error': 'Access denied'}), 403
     shutil.move(old, new)
@@ -878,8 +898,9 @@ def move():
 def copy():
     path = request.json.get('path', '')
     dest = request.json.get('dest', '')
-    old = safe_path(path)
-    new = safe_path(os.path.join(dest, os.path.basename(path)))
+    uid = str(current_user.id)
+    old = safe_path(path, uid)
+    new = safe_path(os.path.join(dest, os.path.basename(path)), uid)
     if not old or not new:
         return jsonify({'error': 'Access denied'}), 403
     (shutil.copy2 if os.path.isfile(old) else shutil.copytree)(old, new)

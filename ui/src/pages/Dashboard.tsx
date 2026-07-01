@@ -359,9 +359,19 @@ export default function Dashboard() {
   const memSparkData = useMemo(() => metrics.map(m => ({ v: m.memory })).slice(-30), [metrics])
 
   const handleAddWidgets = useCallback((newWidgets: DashboardWidget[]) => {
-    setWidgets(prev => [...prev, ...newWidgets])
-    addToast(`${newWidgets.length} widget${newWidgets.length !== 1 ? 's' : ''} added`, 'success')
-  }, [addToast])
+    const enhanced = newWidgets.map(w => {
+      if (w.title === 'CPU Usage' && sys) return { ...w, value: `${sys.cpu.percent}%` }
+      if (w.title === 'Memory' && sys) return { ...w, value: `${sys.memory.percent}%` }
+      if (w.title === 'Storage' && storage) return { ...w, value: `${storage.percent}%` }
+      if (w.title === 'Temperature' && sys) return { ...w, value: typeof sys.temperature === 'number' ? `${sys.temperature.toFixed(1)}°C` : String(sys.temperature) }
+      if (w.title === 'Uptime' && sys) return { ...w, value: sys.uptime }
+      if (w.title === 'Devices') return { ...w, value: String(devices.length) }
+      if (w.title === 'Processes' && processes) return { ...w, value: String(processes.length) }
+      return w
+    })
+    setWidgets(prev => [...prev, ...enhanced])
+    addToast(`${enhanced.length} widget${enhanced.length !== 1 ? 's' : ''} added`, 'success')
+  }, [addToast, sys, storage, devices, processes])
 
   const handleRemoveWidget = useCallback((id: string) => {
     setWidgets(prev => prev.filter(w => w.id !== id))
