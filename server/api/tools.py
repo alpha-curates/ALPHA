@@ -4,7 +4,7 @@ from models.models import Note, Todo, Bookmark
 from flask_login import login_required, current_user
 from datetime import datetime
 import hashlib, base64, json, os
-import subprocess, threading, time
+import subprocess, threading, time, pty, select
 
 tools_bp = Blueprint('tools', __name__)
 
@@ -18,21 +18,37 @@ def _get_session(user_id):
             s = _sessions[user_id]
             if s['proc'].poll() is None:
                 return s
+            try:
+                os.close(s.get('master_fd', -1))
+            except:
+                pass
             del _sessions[user_id]
+        master_fd, slave_fd = pty.openpty()
         proc = subprocess.Popen(
-            ['sh'],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True, bufsize=1
+            ['sh', '-i'],
+            stdin=slave_fd,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            close_fds=True
         )
+        os.close(slave_fd)
         buf = []
         def reader():
-            for line in iter(proc.stdout.readline, ''):
-                buf.append(line)
+            while True:
+                r, _, _ = select.select([master_fd], [], [], 0.1)
+                if r:
+                    try:
+                        data = os.read(master_fd, 16384)
+                        if not data:
+                            break
+                        buf.append(data.decode('utf-8', errors='replace'))
+                    except OSError:
+                        break
+                elif proc.poll() is not None:
+                    break
         t = threading.Thread(target=reader, daemon=True)
         t.start()
-        s = {'proc': proc, 'buf': buf, 'thread': t}
+        s = {'proc': proc, 'buf': buf, 'thread': t, 'master_fd': master_fd}
         _sessions[user_id] = s
         return s
 
@@ -50,16 +66,24 @@ def terminal_stream():
         try:
             while True:
                 while idx < len(session['buf']):
-                    line = session['buf'][idx]
+                    chunk = session['buf'][idx]
                     idx += 1
-                    yield f"data: {json.dumps({'output': line})}\n\n"
+                    yield f"data: {json.dumps({'output': chunk})}\n\n"
                 if session['proc'].poll() is not None:
+                    time.sleep(0.1)
+                    while idx < len(session['buf']):
+                        chunk = session['buf'][idx]
+                        idx += 1
+                        yield f"data: {json.dumps({'output': chunk})}\n\n"
                     yield f"data: {json.dumps({'done': True})}\n\n"
                     break
                 time.sleep(0.03)
         except GeneratorExit:
             pass
-    return __import__('flask').Response(stream_with_context(generate()), mimetype='text/event-stream', headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+    resp = __import__('flask').Response(stream_with_context(generate()), mimetype='text/event-stream')
+    resp.headers['Cache-Control'] = 'no-cache'
+    resp.headers['X-Accel-Buffering'] = 'no'
+    return resp
 
 @tools_bp.route('/terminal/write', methods=['POST'])
 @login_required
@@ -71,8 +95,7 @@ def terminal_write():
     if any(b in cmd for b in BLOCKED_CMDS):
         return jsonify({'ok': False, 'error': 'Blocked'})
     session = _get_session(str(current_user.id))
-    session['proc'].stdin.write(cmd + '\n')
-    session['proc'].stdin.flush()
+    os.write(session['master_fd'], (cmd + '\n').encode())
     return jsonify({'ok': True})
 
 @tools_bp.route('/terminal', methods=['POST'])
@@ -86,8 +109,7 @@ def run_command():
     if any(b in cmd for b in BLOCKED_CMDS):
         return jsonify({'output': 'Command blocked for safety\n'})
     session = _get_session(str(current_user.id))
-    session['proc'].stdin.write(cmd + '\n')
-    session['proc'].stdin.flush()
+    os.write(session['master_fd'], (cmd + '\n').encode())
     # Collect whatever output is available immediately
     output = []
     deadline = time.time() + 3.0
@@ -108,8 +130,13 @@ def reset_terminal():
     uid = str(current_user.id)
     with _sessions_lock:
         if uid in _sessions:
+            s = _sessions[uid]
             try:
-                _sessions[uid]['proc'].kill()
+                os.close(s.get('master_fd', -1))
+            except:
+                pass
+            try:
+                s['proc'].kill()
             except:
                 pass
             del _sessions[uid]
@@ -333,3 +360,4 @@ def push_updates():
 def restart_server():
     subprocess.Popen(['sudo', 'systemctl', 'restart', 'alpha.service'])
     return jsonify({'message': 'Restarting...'})
+
