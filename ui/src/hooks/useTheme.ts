@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import api from '../utils/api'
 import { CustomizationConfig } from '../types'
+import { VIRTUAL_PROVIDERS } from '../data/aiModels'
 
 export const THEMES = [
   { id: 'theme-purple', name: 'Purple', color: '#6c5ce7' },
@@ -117,7 +118,24 @@ export function useTheme() {
   const [providers, setProviders] = useState<any[]>([])
 
   useEffect(() => {
-    api.get('/ai/providers').then(r => setProviders(r.data || [])).catch(() => {})
+    api.get('/ai/providers').then(r => {
+      const dp = r.data || []
+      if (dp.length > 0) {
+        setProviders(dp)
+      } else {
+        setProviders(VIRTUAL_PROVIDERS.map(vp => ({
+          id: vp.id, name: vp.name, type: vp.type,
+          api_url: vp.api_url, api_key: vp.api_key,
+          default_model: vp.default_model, enabled: true,
+        })))
+      }
+    }).catch(() => {
+      setProviders(VIRTUAL_PROVIDERS.map(vp => ({
+        id: vp.id, name: vp.name, type: vp.type,
+        api_url: vp.api_url, api_key: vp.api_key,
+        default_model: vp.default_model, enabled: true,
+      })))
+    })
   }, [])
 
   useEffect(() => {

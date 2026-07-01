@@ -22,7 +22,7 @@ def get_provider_for_user(provider_id=None, data=None):
             return OpenAICompatibleProvider({
                 'api_key': d.get('provider_api_key', ''),
                 'api_url': d.get('provider_api_url', 'https://opencode.ai/zen'),
-                'default_model': d.get('model', 'big-pickle')
+                'default_model': d.get('model', 'deepseek-v4-flash-free')
             }), OPENCODE_MODELS
         if provider_id == '__keylessai__':
             from .ai_providers import OpenAICompatibleProvider
@@ -79,7 +79,7 @@ def status():
             'default_model': 'big-pickle',
             'models': OPENCODE_MODELS
         })
-        result['active_provider'] = {'id': '__opencode__', 'name': 'OpenCode Zen', 'type': 'openai', 'model': 'big-pickle'}
+        result['active_provider'] = {'id': '__opencode__', 'name': 'OpenCode Zen', 'type': 'openai', 'model': 'deepseek-v4-flash-free'}
     return jsonify(result)
 
 @ai_bp.route('/models')

@@ -4,6 +4,13 @@ import api from '../../utils/api'
 import { DashboardWidget, AIProvider } from '../../types'
 import { VIRTUAL_PROVIDERS } from '../../data/aiModels'
 
+const VIRTUAL_FALLBACK = VIRTUAL_PROVIDERS.length > 0 ? {
+  id: VIRTUAL_PROVIDERS[0].id, name: VIRTUAL_PROVIDERS[0].name,
+  type: VIRTUAL_PROVIDERS[0].type, api_url: VIRTUAL_PROVIDERS[0].api_url,
+  api_key: VIRTUAL_PROVIDERS[0].api_key,
+  default_model: VIRTUAL_PROVIDERS[0].default_model, enabled: true,
+} : null'
+
 const PRESET_PROMPTS = [
   { label: 'System', icon: Cpu, prompt: 'CPU load, memory usage, temperature, processes, uptime, disk I/O' },
   { label: 'Network', icon: Wifi, prompt: 'bandwidth, latency, packets, connections, DNS, WiFi signal' },
@@ -69,7 +76,7 @@ export default function AIWidgetGenerator({ providers, onGenerate, onClose }: Pr
   const [providerId, setProviderId] = useState('')
   const [error, setError] = useState('')
 
-  const activeProvider = providers.find(p => p.id === providerId) || findBestProvider(providers)
+  const activeProvider = providers.find(p => p.id === providerId) || findBestProvider(providers) || VIRTUAL_FALLBACK
 
   const handleGenerate = useCallback(async () => {
     if (!activeProvider) { setError('No AI provider configured. Go to AI Studio to set one up.'); return }

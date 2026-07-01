@@ -335,7 +335,7 @@ export const VIRTUAL_PROVIDERS: VirtualProviderDef[] = [
   {
     id: '__opencode__', name: 'OpenCode Zen', type: 'openai',
     api_url: 'https://opencode.ai/zen/v1', api_key: '',
-    default_model: 'big-pickle',
+    default_model: 'deepseek-v4-flash-free',
     models: OPENCODE_MODELS,
   },
   {
