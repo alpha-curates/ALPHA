@@ -59,5 +59,4 @@ fi
 echo "Pulling Ollama models..."
 ollama list 2>/dev/null | grep -q llama3.2 || ollama pull llama3.2:1b 2>&1 || true
 ollama list 2>/dev/null | grep -q mistral || ollama pull mistral:7b 2>&1 || true
-sudo systemctl restart alpha.service
-echo "Update complete!"
+echo "Build complete. Server restart is handled by dev-update endpoint."

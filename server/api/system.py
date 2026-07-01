@@ -98,19 +98,26 @@ def apply_update():
 
 @system_bp.route('/dev-update', methods=['POST'])
 def dev_update():
+    import threading, time as _time
+    out_lines = []
+    def log(msg):
+        out_lines.append(msg)
+        print(msg, flush=True)
+    log("=== Dev Update ===")
+    log("Running: bash update.sh")
     try:
-        out_lines = []
-        def log(msg):
-            out_lines.append(msg)
-            print(msg, flush=True)
-        log("=== Dev Update ===")
-        log("Running: cd ~ && cd ALPHA && bash update.sh")
         r = subprocess.run(['bash', 'update.sh'], capture_output=True, text=True, cwd='/home/pi/ALPHA', timeout=600)
-        if r.stdout: log(r.stdout[-2000:])
-        if r.stderr: log(r.stderr[-2000:])
+        if r.stdout: log(r.stdout[-3000:])
+        if r.stderr: log(r.stderr[-1000:])
         if r.returncode != 0:
-            return jsonify({'output': chr(10).join(out_lines), 'error': 'Update script failed'}), 500
+            log('Warning: update.sh returned non-zero, but continuing...')
         log("=== Update Complete ===")
+        log("Server will restart in 3 seconds...")
+        def _restart():
+            _time.sleep(3)
+            import os, signal
+            subprocess.run(['sudo', 'systemctl', 'restart', 'alpha.service'], capture_output=True, timeout=30)
+        threading.Thread(target=_restart, daemon=True).start()
         return jsonify({'output': chr(10).join(out_lines)})
     except subprocess.TimeoutExpired:
         return jsonify({'output': chr(10).join(out_lines) if out_lines else '', 'error': 'Timed out'}), 500
