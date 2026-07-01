@@ -9,7 +9,7 @@ const VIRTUAL_FALLBACK = VIRTUAL_PROVIDERS.length > 0 ? {
   type: VIRTUAL_PROVIDERS[0].type, api_url: VIRTUAL_PROVIDERS[0].api_url,
   api_key: VIRTUAL_PROVIDERS[0].api_key,
   default_model: VIRTUAL_PROVIDERS[0].default_model, enabled: true,
-} : null'
+} : null
 
 const PRESET_PROMPTS = [
   { label: 'System', icon: Cpu, prompt: 'CPU load, memory usage, temperature, processes, uptime, disk I/O' },
